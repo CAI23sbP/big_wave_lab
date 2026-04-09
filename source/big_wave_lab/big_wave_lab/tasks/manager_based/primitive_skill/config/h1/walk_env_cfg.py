@@ -7,6 +7,7 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.envs import ViewerCfg
 from isaaclab.managers import SceneEntityCfg
+from isaaclab.managers import CurriculumTermCfg as CurrTerm
 
 import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
 
@@ -84,7 +85,7 @@ class WalkCommandsCfg(CommandsCfg):
         
 @configclass
 class WalkCurriculumCfg(CurriculumCfg):
-    pass 
+    terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
 
 @configclass
 class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
@@ -98,7 +99,11 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
         super().__post_init__()
         robot = H1_MINIMAL_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         robot.spawn.articulation_props.enabled_self_collisions = True
+        ## scene set
         self.scene.robot = robot 
+        self.scene.terrain.terrain_type = "generator"
+        self.scene.terrain.terrain_generator = mdp.ROUGH_TERRAINS_CFG
+        self.scene.terrain.max_init_terrain_level = 10
         
         ## observation set
         # self.observations.critic.base_friction.params["asset_cfg"].body_names = [".*torso_link"]
@@ -143,3 +148,7 @@ class H1WalkRoughEnvCfg_PLAY(H1WalkRoughEnvCfg):
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+        if self.scene.terrain.terrain_generator is not None:
+            self.scene.terrain.terrain_generator.num_rows = 5
+            self.scene.terrain.terrain_generator.num_cols = 5
+            self.scene.terrain.terrain_generator.curriculum = False

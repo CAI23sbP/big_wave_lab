@@ -65,7 +65,7 @@ gym.register(
     order_enforce = False,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.step_env_cfg:H1StepFlatEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.primitive_skill_rl_cfgs.step_ppo_cfg:H1StepFlatPPORunnerCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.step_ppo_cfg:H1StepFlatPPORunnerCfg",
     },
 )
 

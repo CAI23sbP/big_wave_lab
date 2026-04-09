@@ -15,6 +15,8 @@ from .feet_target_command import FeetTargetCommand
 @configclass
 class SkillBlenderCommandCfg(CommandTermCfg):
 
+    class_type = MISSING 
+    
     asset_name: str = MISSING
     
     total_num_points: int = MISSING 
@@ -149,7 +151,7 @@ class FeetTargetCommandCfg(SkillBlenderCommandCfg):
         prim_path="/Visuals/Command/target_feet",
         markers={
             "sphere": sim_utils.SphereCfg(
-                radius=0.5,
+                radius=0.05,
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0),opacity = 0.3),
             ),
         }
@@ -159,7 +161,7 @@ class FeetTargetCommandCfg(SkillBlenderCommandCfg):
         prim_path="/Visuals/Command/current_feet",
         markers={
             "sphere": sim_utils.SphereCfg(
-                radius=0.5,
+                radius=0.05,
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0),opacity = 0.3),
             ),
         }

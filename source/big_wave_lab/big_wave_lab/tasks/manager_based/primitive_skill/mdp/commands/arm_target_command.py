@@ -38,7 +38,7 @@ class ArmTargetCommand(CommandTerm):
         self.target_wp_i = torch.randint(0, self.num_pairs, (self.num_envs,), device=self.device) # for each env, choose one seq, [num_envs]
         self.target_wp_j = torch.zeros(self.num_envs, dtype=torch.long, device=self.device) # for each env, the timestep in the seq is initialized to 0, [num_envs]
         self.target_wp_dt = 1 / cfg.resampling_time_range[1]
-        self.target_wp_update_steps = self.target_wp_dt / self.dt # not necessary integer
+        self.target_wp_update_steps = self.target_wp_dt / self.step_dt # not necessary integer
         assert self.step_dt <= self.target_wp_dt, f"self.step_dt {self.step_dt} must be less than self.target_wp_dt {self.target_wp_dt}"
         self.target_wp_update_steps_int = sample_int_from_float(self.target_wp_update_steps)
         self.delayed_obs_target_wp_steps = 0.0
@@ -67,7 +67,7 @@ class ArmTargetCommand(CommandTerm):
         max_command_step = max_command_time / self._env.step_dt
         # # logs data
         self.metrics["error_arm"] += (
-            torch.norm(self.ref_wrist_pos - self.robot.data.body_link_pose_w[:, self.wrist_indices, :7], dim=-1) / max_command_step
+            torch.norm(self.ref_wrist_pos - self.robot.data.body_link_pose_w[:, self.wrist_indices, :7], dim=(1,2)) / max_command_step
         )
 
     def compute(self, dt: float):
@@ -123,6 +123,6 @@ class ArmTargetCommand(CommandTerm):
         if not self.robot.is_initialized:
             return
         self.ori_wrist_pos = self.robot.data.body_link_pose_w[:, self.wrist_indices, :7].clone() # [num_envs, 2, 7], two hands
-        self.target_arm_visualizer.visualize(self.ref_wrist_pos.clone()[:,:, :3])
-        self.current_arm_visualizer.visualize(self.ori_wrist_pos.clone()[:,:, :3])
+        self.target_arm_visualizer.visualize(self.ref_wrist_pos.clone()[:,:, :3].reshape(-1,3))
+        self.current_arm_visualizer.visualize(self.ori_wrist_pos.clone()[:,:, :3].reshape(-1,3))
 

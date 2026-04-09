@@ -13,22 +13,33 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     slope_threshold=0.75,
     use_cache=False,
     sub_terrains={
-        "flat": terrain_gen.HfRandomUniformTerrainCfg(
-            proportion=0.2, noise_range=(0.0, 0.0), noise_step=0.0, border_width=0.25
+        "plan": terrain_gen.MeshPlaneTerrainCfg(
+            proportion = 0.2
         ),
         "obstacles": terrain_gen.HfDiscreteObstaclesTerrainCfg(
-            proportion=0.2, num_obstacles = 20
+            proportion = 0.2,
+            obstacle_height_mode = "choice",
+            obstacle_width_range = (1., 2.),
+            obstacle_height_range = (0., 0.04),
+            num_obstacles = 20,
+            platform_width = 3.
         ),
         "uniform": terrain_gen.HfRandomUniformTerrainCfg(
-            proportion=0.4, noise_range=(0.02, 0.10), noise_step=0.02, border_width=0.25
+            proportion = 0.4,
+            noise_range = (-0.07, 0.07),
+            noise_step=0.02, 
+            downsampled_scale = 0.2
         ),
         "slope_up": terrain_gen.HfPyramidSlopedTerrainCfg(
-            proportion=0.1, slope_range=(0.0, 0.4), platform_width=2.0, border_width=0.25
+            proportion = 0.1,
+            slope_range = (0, 0.15),
+            platform_width = 0.1,
         ),
         "slope_down": terrain_gen.HfInvertedPyramidSlopedTerrainCfg(
-            proportion=0.1, slope_range=(0.0, 0.4), platform_width=2.0, border_width=0.25
+            proportion = 0.1,
+            slope_range = (0, 0.15),
+            platform_width = 0.1,
         ),
-
     },
 )
 

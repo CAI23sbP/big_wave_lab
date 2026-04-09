@@ -24,15 +24,16 @@ class FeetTargetCommand(CommandTerm):
     def __init__(self, cfg: FeetTargetCommandCfg, env: ManagerBasedEnv):
         super().__init__(cfg, env)
         self.step_dt = env.step_dt
+        self.robot: Articulation = env.scene[cfg.asset_name]
         
-        self.feet_indices = self.robot.find_joints(cfg.body_names)[0]
+        self.feet_indices = self.robot.find_bodies(cfg.body_names)[0]
         self.ori_feet_pos = self.robot.data.body_link_pose_w[:, self.feet_indices, :2].clone() # [num_envs, 2, 3], two hands
         
         self.target_wp, self.num_pairs, self.num_wp = sample_fp(self.device, num_points=cfg.total_num_points, num_wp=cfg.num_way_points, ranges=cfg.ranges) # relative, self.target_wp.shape=[num_pairs, num_wp, 2, 7]
         self.target_wp_i = torch.randint(0, self.num_pairs, (self.num_envs,), device=self.device) # for each env, choose one seq, [num_envs]
         self.target_wp_j = torch.zeros(self.num_envs, dtype=torch.long, device=self.device) # for each env, the timestep in the seq is initialized to 0, [num_envs]
         self.target_wp_dt = 1 / cfg.resampling_time_range[1]
-        self.target_wp_update_steps = self.target_wp_dt / self.dt # not necessary integer
+        self.target_wp_update_steps = self.target_wp_dt / self.step_dt # not necessary integer
         assert self.step_dt <= self.target_wp_dt, f"self.step_dt {self.step_dt} must be less than self.target_wp_dt {self.target_wp_dt}"
         self.target_wp_update_steps_int = sample_int_from_float(self.target_wp_update_steps)
         self.delayed_obs_target_wp_steps = 0.0
@@ -61,7 +62,7 @@ class FeetTargetCommand(CommandTerm):
         max_command_step = max_command_time / self._env.step_dt
         # # logs data
         self.metrics["error_feet"] += (
-            torch.norm(self.ref_feet_pos - self.robot.data.body_link_pose_w[:, self.feet_indices, :2], dim=-1) / max_command_step
+            torch.norm(self.ref_feet_pos - self.robot.data.body_link_pose_w[:, self.feet_indices, :2], dim=(1,2)) / max_command_step
         )
 
     def compute(self, dt: float):
@@ -99,23 +100,32 @@ class FeetTargetCommand(CommandTerm):
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         if debug_vis:
-            if not hasattr(self, "target_arm_visualizer"):
+            if not hasattr(self, "target_feet_visualizer"):
                 # -- goal
-                self.target_arm_visualizer = VisualizationMarkers(self.cfg.target_arm_visualizer_cfg)
+                self.target_feet_visualizer = VisualizationMarkers(self.cfg.target_feet_visualizer_cfg)
                 # -- current
-                self.current_arm_visualizer = VisualizationMarkers(self.cfg.current_arm_visualizer_cfg)
+                self.current_feet_visualizer = VisualizationMarkers(self.cfg.current_feet_visualizer_cfg)
             # set their visibility to true
-            self.target_arm_visualizer.set_visibility(True)
-            self.current_arm_visualizer.set_visibility(True)
+            self.target_feet_visualizer.set_visibility(True)
+            self.current_feet_visualizer.set_visibility(True)
         else:
-            if hasattr(self, "target_arm_visualizer"):
-                self.target_arm_visualizer.set_visibility(False)
-                self.current_arm_visualizer.set_visibility(False)
+            if hasattr(self, "target_feet_visualizer"):
+                self.target_feet_visualizer.set_visibility(False)
+                self.current_feet_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
         if not self.robot.is_initialized:
             return
         ori_feet_pos = self.robot.data.body_link_pose_w[:, self.feet_indices, :7].clone() # [num_envs, 2, 7], two hands
-        self.target_arm_visualizer.visualize(self.ref_feet_pos.clone()[:,:, :3])
-        self.current_arm_visualizer.visualize(ori_feet_pos.clone()[:,:, :3])
+        vis_ref_feet_pos = torch.ones(
+            self.ref_feet_pos.shape[0],  # N
+            self.ref_feet_pos.shape[1],  # 2
+            3,
+            device=self.ref_feet_pos.device,
+            dtype=self.ref_feet_pos.dtype,
+        )
+        vis_ref_feet_pos[:, :, :2] = self.ref_feet_pos   # x, y
+        vis_ref_feet_pos[:, :, 2] = 0.0                  # z
+        self.target_feet_visualizer.visualize(vis_ref_feet_pos.reshape(-1,3))
+        self.current_feet_visualizer.visualize(ori_feet_pos.clone()[:,:, :3].reshape(-1,3))
 

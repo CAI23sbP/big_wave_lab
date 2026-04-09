@@ -23,7 +23,10 @@ class StepObservationsCfg(ObservationsCfg):
         
         feet_pose_w_diff = ObsTerm(
             func=mdp.feet_pose_w_diff, 
-            params={"command_name": "pose_command"},
+            params={
+                "command_name": "pose_command",
+                "asset_cfg":SceneEntityCfg("robot", body_names=[".*ankle_link"])
+                },
             scale=1.,
             clip=(-18.0, 18.0),
             )
@@ -37,7 +40,10 @@ class StepObservationsCfg(ObservationsCfg):
         
         feet_pose_w_diff = ObsTerm(
             func=mdp.feet_pose_w_diff, 
-            params={"command_name": "pose_command"},
+            params={
+                "command_name": "pose_command",
+                "asset_cfg":SceneEntityCfg("robot", body_names=[".*ankle_link"])
+                    },
             scale=1.,
             clip=(-18.0, 18.0),
             history_length = 3,
@@ -63,7 +69,10 @@ class StepRewardCfg(RewardsCfg):
     feet_pose_tracking = RewTerm(
         func=mdp.feet_pose_tracking, 
         weight=5.0, 
-        params={"command_name": "pose_command"}
+        params={
+            "command_name": "pose_command",
+            "asset_cfg":SceneEntityCfg("robot", body_names=[".*ankle_link"])
+                },
     )
 
 @configclass
@@ -76,6 +85,7 @@ class StepCommandsCfg(CommandsCfg):
             total_num_points=1000000,
             num_way_points=10,
             debug_vis=True,
+            body_names= [".*ankle_link"],
             ranges=mdp.FeetTargetCommandCfg.Ranges(
                 feet_max_radius=0.25
             ),

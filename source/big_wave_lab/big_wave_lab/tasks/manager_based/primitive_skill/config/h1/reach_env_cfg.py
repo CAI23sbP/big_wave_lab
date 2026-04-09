@@ -63,7 +63,7 @@ class ReachRewardCfg(RewardsCfg):
     )
         
 @configclass
-class SquatCommandsCfg(CommandsCfg):
+class ReachCommandsCfg(CommandsCfg):
     """Command specifications for the MDP."""
     def __post_init__(self):
         self.pose_command = mdp.ArmTargetCommandCfg(
@@ -86,6 +86,7 @@ class SquatCommandsCfg(CommandsCfg):
         
 @configclass
 class H1ReachFlatEnvCfg(PosingFlatEnvCfg):
+    commands: ReachCommandsCfg = ReachCommandsCfg()
     observations: ReachObservationsCfg = ReachObservationsCfg()
     rewards: ReachRewardCfg = ReachRewardCfg()
     
