@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name="tiangong2.0_pro_edit_joint_limit">
+  <link name="tiangong2pro_urdf">
+    <visual>
+      <origin xyz="0. -0.27008 -0.25958" rpy="0.0151911 0.0859374 1.7459825"/>
+      <geometry>
+        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/r_hand_geometry_mesh.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-0.0011168 0.2698793 -0.258408 " rpy="-0.0121421 0.0687509 -1.7457469"/>
+      <geometry>
+        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/l_hand_geometry_mesh.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. -0.27008 -0.25958" rpy="0.0151911 0.0859374 1.7459825"/>
+      <geometry>
+        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/r_hand_geometry_mesh.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.0011168 0.2698793 -0.258408 " rpy="-0.0121421 0.0687509 -1.7457469"/>
+      <geometry>
+        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/l_hand_geometry_mesh.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
