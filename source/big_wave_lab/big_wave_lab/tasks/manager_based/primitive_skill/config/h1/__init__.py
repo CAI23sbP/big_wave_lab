@@ -56,26 +56,25 @@ gym.register(
     },
 )
 
-
-## Step task
+## Walk task
 gym.register(
-    id="Isaac-Step-Flat-Unitree-H1-v0",
+    id="Isaac-Walk-Rough-Unitree-H1-v0",
     entry_point="big_wave_lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     order_enforce = False,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.step_env_cfg:H1StepFlatEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.step_ppo_cfg:H1StepFlatPPORunnerCfg",
+        "env_cfg_entry_point": f"{__name__}.walk_env_cfg:H1WalkRoughEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.walk_ppo_cfg:H1WalkRoughPPORunnerCfg",
     },
 )
 
 gym.register(
-    id="Isaac-Step-Flat-Unitree-H1-Play-v0",
+    id="Isaac-Walk-Rough-Unitree-H1-Play-v0",
     entry_point="big_wave_lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     order_enforce = False,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.step_env_cfg:H1StepFlatEnvCfg_PLAY",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.step_ppo_cfg:H1StepFlatPPORunnerCfg",
+        "env_cfg_entry_point": f"{__name__}.walk_env_cfg:H1WalkRoughEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.walk_ppo_cfg:H1WalkRoughPPORunnerCfg",
     },
 )

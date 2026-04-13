@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
+
 from rsl_rl.modules import ActorCritic
 from rsl_rl.algorithms import PPO
 
@@ -56,7 +58,8 @@ class ModifiedPPO(PPO):
         # Distributed training parameters
         multi_gpu_cfg = multi_gpu_cfg,
         )
-        
+        del self.optimizer
+        self.optimizer = optim.AdamW(filter(lambda p: p.requires_grad, self.policy.parameters()), lr=learning_rate)
 
     def update(self):  # noqa: C901
         mean_value_loss = 0
@@ -246,18 +249,18 @@ class ModifiedPPO(PPO):
                 mseloss = torch.nn.MSELoss()
                 rnd_loss = mseloss(predicted_embedding, target_embedding)
 
-            norm_obs_batch = self.policy.get_actor_obs(obs_batch)
-            norm_obs_batch = self.policy.actor_obs_normalizer(norm_obs_batch)
-            norm_obs_batch = norm_obs_batch.detach().requires_grad_(True)
-            self.policy.update_distribution(norm_obs_batch)
-            actions_log_prob_batch = self.policy.get_actions_log_prob(actions_batch)
-            a_logp_grad = torch.autograd.grad(actions_log_prob_batch, norm_obs_batch, grad_outputs=torch.ones_like(actions_log_prob_batch),
-                                                create_graph=True, retain_graph=True, only_inputs=True)
-            a_logp_grad = a_logp_grad[0]
-            a_logp_grad_norm = torch.sum(torch.square(a_logp_grad), dim=-1)
+            # norm_obs_batch = self.policy.get_actor_obs(obs_batch)
+            # norm_obs_batch = self.policy.actor_obs_normalizer(norm_obs_batch)
+            # norm_obs_batch = norm_obs_batch.detach().requires_grad_(True)
+            # self.policy.update_distribution(norm_obs_batch)
+            # actions_log_prob_batch = self.policy.get_actions_log_prob(actions_batch)
+            # a_logp_grad = torch.autograd.grad(actions_log_prob_batch, norm_obs_batch, grad_outputs=torch.ones_like(actions_log_prob_batch),
+            #                                     create_graph=True, retain_graph=True, only_inputs=True)
+            # a_logp_grad = a_logp_grad[0]
+            # a_logp_grad_norm = torch.sum(torch.square(a_logp_grad), dim=-1)
 
-            lcp_loss = torch.mean(a_logp_grad_norm)
-            loss += lcp_loss
+            # lcp_loss = torch.mean(a_logp_grad_norm)
+            # loss += lcp_loss
             # Compute the gradients
             # -- For PPO
             self.optimizer.zero_grad()
@@ -281,7 +284,7 @@ class ModifiedPPO(PPO):
                 self.rnd_optimizer.step()
 
             # Store the losses
-            mean_lcp_loss += lcp_loss.item()
+            # mean_lcp_loss += lcp_loss.item()
             mean_value_loss += value_loss.item()
             mean_surrogate_loss += surrogate_loss.item()
             mean_entropy += entropy_batch.mean().item()
@@ -312,7 +315,7 @@ class ModifiedPPO(PPO):
             "value_function": mean_value_loss,
             "surrogate": mean_surrogate_loss,
             "entropy": mean_entropy,
-            "lcp": mean_lcp_loss
+            # "lcp": mean_lcp_loss
         }
         if self.rnd:
             loss_dict["rnd"] = mean_rnd_loss

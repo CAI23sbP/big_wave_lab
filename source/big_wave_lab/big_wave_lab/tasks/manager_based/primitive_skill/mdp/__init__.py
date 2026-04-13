@@ -5,3 +5,4 @@ from .observations import *
 from .commands import *
 from .actions import *
 from .rough_terrain import ROUGH_TERRAINS_CFG
+from .curriculums import *

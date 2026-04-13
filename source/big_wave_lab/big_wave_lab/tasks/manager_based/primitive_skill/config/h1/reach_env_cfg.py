@@ -10,16 +10,20 @@ from isaaclab.managers import SceneEntityCfg
 import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
 
 ##
-from isaaclab_assets import H1_MINIMAL_CFG
+from big_wave_lab.assets.robot_cfg import H1_2_CFG
+
 @configclass
 class ReachObservationsCfg(ObservationsCfg):
     
     @configclass
     class ReachPolicyCfg(ObservationsCfg.PolicyCfg):
         
-        waist_body_pose_w_diff = ObsTerm(
-            func=mdp.body_pose_w_diff, 
-            params={"command_name": "pose_command"},
+        target_body_pos_w_diff = ObsTerm(
+            func=mdp.body_pos_w_diff,
+            params={
+                "command_name": "pose_command",
+                "asset_cfg": SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"]),
+            },
             scale=1.,
             clip=(-18.0, 18.0),
             )
@@ -31,17 +35,20 @@ class ReachObservationsCfg(ObservationsCfg):
     @configclass
     class ReachCriticCfg(ObservationsCfg.CriticCfg):
         
-        waist_body_pose_w_diff = ObsTerm(
-            func=mdp.body_pose_w_diff, 
-            params={"command_name": "pose_command"},
+        target_body_pos_w_diff = ObsTerm(
+            func=mdp.body_pos_w_diff,
+            params={
+                "command_name": "pose_command",
+                "asset_cfg": SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"]),
+            },
             scale=1.,
             clip=(-18.0, 18.0),
             history_length = 3,
             )
         
-        waist_body_pose_w = ObsTerm(
-            func=mdp.body_pose_w, 
-            params={"asset_cfg":SceneEntityCfg("robot", body_names=[".*_wrist_.*"])},
+        target_body_pos_w = ObsTerm(
+            func=mdp.body_pos_w,
+            params={"asset_cfg":SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"])},
             scale=1.,
             clip=(-18.0, 18.0),
             history_length = 3,
@@ -49,18 +56,31 @@ class ReachObservationsCfg(ObservationsCfg):
         
         def __post_init__(self):
             super().__post_init__()
-            
+            self.base_mass.params["asset_cfg"].body_names = [".*torso_link"]
+            self.feet_contact_mask.params["sensor_cfg"].body_names = [".*_ankle_roll_.*"]
+
 
     policy: ReachPolicyCfg = ReachPolicyCfg()
     critic: ReachCriticCfg = ReachCriticCfg()
         
 @configclass
 class ReachRewardCfg(RewardsCfg):
-    body_pose_tracking = RewTerm(
-        func=mdp.body_pose_tracking, 
-        weight=5.0, 
-        params={"command_name": "pose_command"}
+    target_body_position_tracking = RewTerm(
+        func=mdp.body_pose_tracking,
+        weight=5.0,
+        params={
+            "command_name": "pose_command",
+            "asset_cfg": SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"]),
+        }
     )
+    
+    def __post_init__(self):
+        self.default_joint_pos.params["left_cfg"].joint_names = ["left_hip_yaw_.*", "left_hip_roll_.*"]
+        self.default_joint_pos.params["right_cfg"].joint_names = ["right_hip_yaw_.*", "right_hip_roll_.*"]
+        self.upper_body_pos.params["asset_cfg"].joint_names = ["torso_.*"]
+
+        self.feet_distance.params["asset_cfg"].body_names = [".*_ankle_roll_.*"]
+        
         
 @configclass
 class ReachCommandsCfg(CommandsCfg):
@@ -72,7 +92,7 @@ class ReachCommandsCfg(CommandsCfg):
             total_num_points=2000000,
             num_way_points=10,
             debug_vis=True,
-            body_names = [".*_wrist_.*"],
+            body_names = [".*_wrist_yaw_.*"],
             ranges=mdp.ArmTargetCommandCfg.Ranges(
                 wrist_max_radius = 0.25,
                 l_wrist_pos_x = (-0.10, 0.25),
@@ -93,24 +113,13 @@ class H1ReachFlatEnvCfg(PosingFlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        robot = H1_MINIMAL_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         robot.spawn.articulation_props.enabled_self_collisions = True
         self.scene.robot = robot 
-        
         ## observation set
-        # self.observations.critic.base_friction.params["asset_cfg"].body_names = [".*torso_link"]
-        self.observations.critic.base_mass.params["asset_cfg"].body_names = [".*torso_link"]
-        self.observations.critic.feet_contact_mask.params["sensor_cfg"].body_names = [".*ankle_link"]
-        
-        ## reward set
-        self.rewards.default_joint_pos.params["left_cfg"].joint_names = ["left_hip_yaw", "left_hip_roll"]
-        self.rewards.default_joint_pos.params["right_cfg"].joint_names = ["right_hip_yaw", "right_hip_roll"]
-        self.rewards.upper_body_pos.params["asset_cfg"].joint_names = ["torso"]
-        self.rewards.upper_body_pos.weight = 0.5
         
         ## event set
         self.events.add_base_mass.params["asset_cfg"].body_names = [".*torso_link"]
-        self.events.base_com.params["asset_cfg"].body_names = [".*torso_link"]
         self.events.base_external_force_torque.params["asset_cfg"].body_names = [".*torso_link"]
         
         ## termination set

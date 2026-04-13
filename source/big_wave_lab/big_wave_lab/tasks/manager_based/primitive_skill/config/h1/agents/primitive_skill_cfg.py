@@ -5,6 +5,7 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 
 @configclass
 class H1PrimSkillPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+    class_name = "ModifiedOnPolicyRunner"
     num_steps_per_env = 60
     max_iterations = 15001
     save_interval = 50
@@ -21,6 +22,7 @@ class H1PrimSkillPPORunnerCfg(RslRlOnPolicyRunnerCfg):
         activation="elu",
     )
     algorithm = RslRlPpoAlgorithmCfg(
+        class_name = "ModifiedPPO",
         value_loss_coef=1.0,
         use_clipped_value_loss=True,
         clip_param=0.2,

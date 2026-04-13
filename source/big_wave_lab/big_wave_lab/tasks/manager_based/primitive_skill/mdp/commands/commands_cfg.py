@@ -5,12 +5,11 @@ from isaaclab.managers import CommandTermCfg
 from isaaclab.markers import VisualizationMarkersCfg
 from isaaclab.utils import configclass
 import isaaclab.sim as sim_utils
-
+from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 from isaaclab.markers.visualization_markers import VisualizationMarkersCfg
 from .base_height_command import BaseHeightCommand
 from .arm_target_command import ArmTargetCommand
-from .feet_target_command import FeetTargetCommand
-
+from .gait_command import GaitCommand
 
 @configclass
 class SkillBlenderCommandCfg(CommandTermCfg):
@@ -113,7 +112,7 @@ class ArmTargetCommandCfg(SkillBlenderCommandCfg):
         prim_path="/Visuals/Command/target_arm",
         markers={
             "sphere": sim_utils.SphereCfg(
-                radius=0.5,
+                radius=0.05,
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0),opacity = 0.3),
             ),
         }
@@ -123,7 +122,7 @@ class ArmTargetCommandCfg(SkillBlenderCommandCfg):
         prim_path="/Visuals/Command/current_arm",
         markers={
             "sphere": sim_utils.SphereCfg(
-                radius=0.5,
+                radius=0.05,
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0),opacity = 0.3),
             ),
         }
@@ -134,39 +133,44 @@ class ArmTargetCommandCfg(SkillBlenderCommandCfg):
 
 
 @configclass
-class FeetTargetCommandCfg(SkillBlenderCommandCfg):
+class GaitCommandCfg(CommandTermCfg):
     """Configuration for the uniform velocity command generator."""
 
-    class_type = FeetTargetCommand
+    class_type = GaitCommand
     
-    body_names: list[str] = MISSING 
+    asset_name: str = MISSING
+    
+    cycle_time: float = MISSING 
+    
+    tracking_sigma: float = MISSING 
+    
+    heading_control_stiffness: float = MISSING 
+    
+    max_curriculum: float = MISSING
+    
+    target_joint_pos_scale: float = MISSING 
     
     @configclass
     class Ranges:
-        feet_max_radius: float = MISSING 
+        lin_vel_x: tuple[float, float] = MISSING
+        lin_vel_y: tuple[float, float] = MISSING
+        ang_vel_z: tuple[float, float] = MISSING
+        heading: tuple[float, float] = MISSING
+        
         
     ranges: Ranges = MISSING
 
-    target_feet_visualizer_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
-        prim_path="/Visuals/Command/target_feet",
-        markers={
-            "sphere": sim_utils.SphereCfg(
-                radius=0.05,
-                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0),opacity = 0.3),
-            ),
-        }
-    )
 
-    current_feet_visualizer_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
-        prim_path="/Visuals/Command/current_feet",
-        markers={
-            "sphere": sim_utils.SphereCfg(
-                radius=0.05,
-                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0),opacity = 0.3),
-            ),
-        }
+    goal_vel_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
+        prim_path="/Visuals/Command/velocity_goal"
     )
+    """The configuration for the goal velocity visualization marker. Defaults to GREEN_ARROW_X_MARKER_CFG."""
+
+    current_vel_visualizer_cfg: VisualizationMarkersCfg = BLUE_ARROW_X_MARKER_CFG.replace(
+        prim_path="/Visuals/Command/velocity_current"
+    )
+    """The configuration for the current velocity visualization marker. Defaults to BLUE_ARROW_X_MARKER_CFG."""
+
     # Set the scale of the visualization markers to (0.5, 0.5, 0.5)
-    target_feet_visualizer_cfg.markers["sphere"].scale = (0.5, 0.5, 0.5)
-    current_feet_visualizer_cfg.markers["sphere"].scale = (0.5, 0.5, 0.5)
-
+    goal_vel_visualizer_cfg.markers["arrow"].scale = (0.5, 0.5, 0.5)
+    current_vel_visualizer_cfg.markers["arrow"].scale = (0.5, 0.5, 0.5)

@@ -179,6 +179,7 @@ class RewardsCfg:
         params={
             "max_distance": 0.5,
             "min_distance": 0.2,
+            "asset_cfg": SceneEntityCfg("robot", body_names=[""])
                 }
     )
     default_joint_pos = RewTerm(
@@ -248,15 +249,6 @@ class EventCfg:
             "asset_cfg": SceneEntityCfg("robot", body_names="base"),
             "mass_distribution_params": (-5.0, 5.0),
             "operation": "add",
-        },
-    )
-
-    base_com = EventTerm(
-        func=mdp.randomize_rigid_body_com,
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
-            "com_range": {"x": (-0.05, 0.05), "y": (-0.05, 0.05), "z": (-0.01, 0.01)},
         },
     )
 

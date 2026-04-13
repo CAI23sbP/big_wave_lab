@@ -7,6 +7,7 @@ from isaaclab.utils import configclass
 
 from .primitive_skill_cfg import H1PrimSkillPPORunnerCfg
 
+
 @configclass
-class H1StepFlatPPORunnerCfg(H1PrimSkillPPORunnerCfg):
-    experiment_name = "h1_step"
+class H1WalkRoughPPORunnerCfg(H1PrimSkillPPORunnerCfg):
+    experiment_name = "h1_walk"

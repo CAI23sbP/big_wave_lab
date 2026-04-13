@@ -41,23 +41,6 @@ def body_pose_tracking(
     body_pose_error = torch.mean(torch.abs(body_pose_diff), dim=1)
     return torch.exp(-4 * body_pose_error)
 
-def feet_pose_tracking(
-    env: ManagerBasedRLEnv,
-    command_name: str,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    ) -> torch.Tensor:    
-    asset: Articulation = env.scene[asset_cfg.name]
-    
-    feet_pose_w = asset.data.body_pose_w[:, asset_cfg.body_ids, :2]
-    ref_feet_pose_w = env.command_manager.get_command(command_name).reshape(env.num_envs, len(asset_cfg.body_ids), -1) [:, :, :2]
-    feet_pos_diff = feet_pose_w - ref_feet_pose_w # [num_envs, 2, 2], two feet, position only
-    feet_pos_diff = torch.flatten(feet_pos_diff, start_dim=1) # [num_envs, 4]
-    feet_pos_error = torch.mean(torch.abs(feet_pos_diff), dim=1)
-    return torch.exp(-4 * feet_pos_error)
-    
-
-
-
 def feet_distance(
     env: ManagerBasedRLEnv,
     max_distance: float,
@@ -127,3 +110,297 @@ def orientation(
                     ), dim=1) * 10)
     orientation = torch.exp(-torch.norm(asset.data.projected_gravity_b[:, :2], dim=1) * 20)
     return (quat_mismatch + orientation) / 2.
+
+
+def joint_pos_diff(
+    env: ManagerBasedRLEnv,
+    command_name:str, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+    asset: Articulation = env.scene[asset_cfg.name]
+    command = env.command_manager.get_term(command_name)
+    joint_pos = asset.data.joint_pos.clone()
+    pos_target = command.ref_dof_pos.clone()
+    diff = joint_pos - pos_target
+    return torch.exp(-2 * torch.norm(diff, dim=1)) \
+            - 0.2 * torch.norm(diff, dim=1).clamp(0, 0.5)
+
+def feet_clearance(    
+    env: ManagerBasedRLEnv,
+    target_feet_height: float,
+    last_feet_z: float,
+    command_name:str,
+    sensor_cfg: SceneEntityCfg, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+    asset: Articulation = env.scene[asset_cfg.name]
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    cycle_time = env.command_manager.get_term(command_name).cfg.cycle_time
+    feet_height = torch.zeros(env.num_envs, 2).to(env.device)
+    contact = contact_sensor.data.net_forces_w_history[:, -1, sensor_cfg.body_ids, 2] > 5.
+    
+    # Get the z-position of the feet and compute the change in z-position
+    feet_z = asset.data.body_link_pose_w[:, asset_cfg.body_ids, 2] - 0.05
+    delta_z = feet_z - last_feet_z
+    feet_height += delta_z
+    last_feet_z = feet_z
+    
+    phase = env.episode_length_buf * env.step_dt / cycle_time
+
+    # Compute swing mask
+    sin_pos = torch.sin(2 * torch.pi * phase)
+    # Add double support phase
+    stance_mask = torch.zeros((env.num_envs, 2), device=env.device)
+    # left foot stance
+    stance_mask[:, 0] = sin_pos >= 0
+    # right foot stance
+    stance_mask[:, 1] = sin_pos < 0
+    # Double support phase
+    stance_mask[torch.abs(sin_pos) < 0.1] = 1
+    swing_mask = 1 - stance_mask
+    # feet height should be closed to target feet height at the peak
+    rew_pos = torch.abs(feet_height - target_feet_height) < 0.01
+    rew_pos = torch.sum(rew_pos * swing_mask, dim=1)
+    feet_height *= ~contact
+    return rew_pos.float()
+
+
+def feet_contact_number(
+    env: ManagerBasedRLEnv,
+    command_name:str,
+    sensor_cfg: SceneEntityCfg, 
+    ) -> torch.Tensor:
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    contact = contact_sensor.data.net_forces_w_history[:, -1, sensor_cfg.body_ids, 2] > 5.
+    cycle_time = env.command_manager.get_term(command_name).cfg.cycle_time
+    
+    phase = env.episode_length_buf * env.step_dt / cycle_time
+
+    # Compute swing mask
+    sin_pos = torch.sin(2 * torch.pi * phase)
+    # Add double support phase
+    stance_mask = torch.zeros((env.num_envs, 2), device=env.device)
+    # left foot stance
+    stance_mask[:, 0] = sin_pos >= 0
+    # right foot stance
+    stance_mask[:, 1] = sin_pos < 0
+    # Double support phase
+    stance_mask[torch.abs(sin_pos) < 0.1] = 1
+    reward = torch.where(contact == stance_mask, 1.0, -0.3)
+    return torch.mean(reward, dim=1).float()
+
+class feet_air_time(ManagerTermBase):
+    def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRLEnv):
+        super().__init__(cfg, env)
+        num_feet = len(cfg.params["sensor_cfg"].body_ids)
+        self.last_contacts = torch.zeros(env.num_envs, num_feet, dtype=torch.bool, device=env.device)
+        self.feet_air_time = torch.zeros(env.num_envs, num_feet, device=env.device)
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        sensor_cfg: SceneEntityCfg,
+        command_name: str,
+        contact_threshold: float = 5.0,
+        max_air_time: float = 0.5,
+    ) -> torch.Tensor:
+        contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+        feet_ids = sensor_cfg.body_ids
+        cycle_time = env.command_manager.get_term(command_name).cfg.cycle_time
+
+        phase = env.episode_length_buf * env.step_dt / cycle_time
+        sin_pos = torch.sin(2 * torch.pi * phase)
+
+        stance_mask = torch.zeros((env.num_envs, 2), dtype=torch.bool, device=env.device)
+        stance_mask[:, 0] = sin_pos >= 0
+        stance_mask[:, 1] = sin_pos < 0
+
+        double_support = torch.abs(sin_pos) < 0.1
+        stance_mask[double_support] = True
+
+        contact = torch.norm(contact_sensor.data.net_forces_w[:, feet_ids, :], dim=-1) > contact_threshold
+
+        contact_filt = contact | stance_mask | self.last_contacts
+        self.last_contacts = contact
+
+        first_contact = (self.feet_air_time > 0.0) & contact_filt
+        self.feet_air_time += env.step_dt
+
+        air_time = torch.clamp(self.feet_air_time, 0.0, max_air_time) * first_contact.float()
+        self.feet_air_time *= (~contact_filt).float()
+        return air_time.sum(dim=1)
+        
+def foot_slip(    
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    net_contact_forces = contact_sensor.data.net_forces_w_history
+
+    contact = net_contact_forces[:, -1, sensor_cfg.body_ids, 2] > 5.
+    foot_speed_norm = torch.norm(asset.data.body_com_vel_w[:, asset_cfg.body_ids, :2], dim=2)
+    rew = torch.sqrt(foot_speed_norm)
+    rew *= contact
+    return torch.sum(rew, dim=1)   
+
+def knee_distance(    
+    env: ManagerBasedRLEnv,
+    min_dist:float, 
+    max_dist:float, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    knee_pos = asset.data.body_com_pos_w[:, asset_cfg.joint_ids, :2]
+    knee_dist = torch.norm(knee_pos[:, 0, :] - knee_pos[:, 1, :], dim=1)
+    fd = min_dist
+    max_df = max_dist / 2
+    d_min = torch.clamp(knee_dist - fd, -0.5, 0.)
+    d_max = torch.clamp(knee_dist - max_df, 0, 0.5)
+    return (torch.exp(-torch.abs(d_min) * 100) + torch.exp(-torch.abs(d_max) * 100)) / 2
+
+
+def feet_contact_forces(
+    env: ManagerBasedRLEnv, max_contact_force: float, sensor_cfg: SceneEntityCfg
+    ):
+    """
+    Calculates the reward for keeping contact forces within a specified range. Penalizes
+    high contact forces on the feet.
+    """
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    net_contact_forces = contact_sensor.data.net_forces_w_history
+
+    return torch.sum((torch.norm(net_contact_forces[:, -1, sensor_cfg.body_ids, :], dim=-1) \
+            - max_contact_force).clip(0, 400), dim=1)
+
+
+def vel_mismatch_exp(    
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    """
+    Computes a reward based on the mismatch in the robot's linear and angular velocities. 
+    Encourages the robot to maintain a stable velocity by penalizing large deviations.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    base_lin_vel = asset.data.root_lin_vel_w
+    base_ang_vel = asset.data.root_ang_vel_w
+
+    lin_mismatch = torch.exp(-torch.square(base_lin_vel[:, 2]) * 10)
+    ang_mismatch = torch.exp(-torch.norm(base_ang_vel[:, :2], dim=1) * 5.)
+
+    c_update = (lin_mismatch + ang_mismatch) / 2.
+
+    return c_update
+
+
+def low_speed(
+    env: ManagerBasedRLEnv,
+    command_name:str, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    """
+    Rewards or penalizes the robot based on its speed relative to the commanded speed. 
+    This function checks if the robot is moving too slow, too fast, or at the desired speed, 
+    and if the movement direction matches the command.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    commands = env.command_manager.get_command(command_name)[:, 2:]
+    base_lin_vel = asset.data.root_lin_vel_w
+    # Calculate the absolute value of speed and command for comparison
+    absolute_speed = torch.abs(base_lin_vel[:, 0])
+    absolute_command = torch.abs(commands[:, 0])
+
+    # Define speed criteria for desired range
+    speed_too_low = absolute_speed < 0.5 * absolute_command
+    speed_too_high = absolute_speed > 1.2 * absolute_command
+    speed_desired = ~(speed_too_low | speed_too_high)
+
+    # Check if the speed and command directions are mismatched
+    sign_mismatch = torch.sign(
+        base_lin_vel[:, 0]) != torch.sign(commands[:, 0])
+
+    # Initialize reward tensor
+    reward = torch.zeros_like(base_lin_vel[:, 0])
+
+    # Assign rewards based on conditions
+    # Speed too low
+    reward[speed_too_low] = -1.0
+    # Speed too high
+    reward[speed_too_high] = 0.
+    # Speed within desired range
+    reward[speed_desired] = 1.2
+    # Sign mismatch has the highest priority
+    reward[sign_mismatch] = -2.0
+    return reward * (commands[:, 0].abs() > 0.1)
+
+
+def track_vel_hard(
+    env: ManagerBasedRLEnv,
+    command_name:str, 
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    asset: Articulation = env.scene[asset_cfg.name]
+    commands = env.command_manager.get_command(command_name)[:, 2:]
+    base_lin_vel = asset.data.root_lin_vel_w
+    base_ang_vel = asset.data.root_ang_vel_w
+
+    lin_vel_error = torch.norm(
+        commands[:, :2] - base_lin_vel[:, :2], dim=1)
+    lin_vel_error_exp = torch.exp(-lin_vel_error * 10)
+
+    # Tracking of angular velocity commands (yaw)
+    ang_vel_error = torch.abs(
+        commands[:, 2] - base_ang_vel[:, 2])
+    ang_vel_error_exp = torch.exp(-ang_vel_error * 10)
+
+    linear_error = 0.2 * (lin_vel_error + ang_vel_error)
+
+    return (lin_vel_error_exp + ang_vel_error_exp) / 2. - linear_error
+
+
+def base_acc(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")):
+    asset: Articulation = env.scene[asset_cfg.name]
+    return torch.exp(-torch.norm(asset.data.body_ang_acc_w[:, asset_cfg.body_ids, :].squeeze(1), dim=1) * 3)
+
+def action_smoothness(    
+    env: ManagerBasedRLEnv,
+):
+    actions = env.action_manager.action
+    last_actions = env.action_manager.prev_action
+    term_1 = torch.sum(torch.square(
+        last_actions - actions), dim=1)
+    term_2 = torch.sum(torch.square(
+        actions + last_actions - 2 * last_actions), dim=1)
+    term_3 = 0.05 * torch.sum(torch.abs(actions), dim=1)
+    return term_1 + term_2 + term_3
+
+def base_height_exp(    
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    base_height_target: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    cycle_time = env.command_manager.get_term(command_name).cfg.cycle_time
+    
+    phase = env.episode_length_buf * env.step_dt / cycle_time
+
+    sin_pos = torch.sin(2 * torch.pi * phase)
+    # Add double support phase
+    stance_mask = torch.zeros((env.num_envs, 2), device=env.device)
+    # left foot stance
+    stance_mask[:, 0] = sin_pos >= 0
+    # right foot stance
+    stance_mask[:, 1] = sin_pos < 0
+    # Double support phase
+    stance_mask[torch.abs(sin_pos) < 0.1] = 1
+    
+    measured_heights = torch.sum(
+        asset.data.body_link_pose_w[:, asset_cfg.body_ids, 2] * stance_mask, dim=1) / torch.sum(stance_mask, dim=1)
+    base_height = asset.data.root_pos_w[:, 2] - (measured_heights - 0.05)
+    return torch.exp(-torch.abs(base_height - base_height_target) * 100)

@@ -62,17 +62,14 @@ class BaseHeightCommand(CommandTerm):
 
     @property
     def command(self) -> torch.Tensor:
-        """The desired base velocity command in the base frame. Shape is (num_envs, 3)."""
-        return self.ref_base_height
+        """The desired base velocity command in the base frame. Shape is (num_envs, 1)."""
+        return self.ref_base_height.clone()
     
     def _update_metrics(self):
         # time for which the command was executed
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
-        # # logs data
-        self.metrics["error_height"] += (
-            torch.norm(self.ref_base_height - self.robot.data.root_pos_w[:, 2], dim=-1) / max_command_step
-        )
+        self.metrics["error_height"] += torch.abs(self.ref_base_height.squeeze(-1) - self.robot.data.root_pos_w[:, 2])/ max_command_step
 
     def compute(self, dt: float):
         self._update_metrics()
@@ -131,7 +128,7 @@ class BaseHeightCommand(CommandTerm):
         base_pos_w = self.robot.data.root_pos_w.clone()
         base_quat_w = self.robot.data.root_quat_w.clone()
         flat_pos_w = base_pos_w.clone()
-        flat_pos_w[:, 2] = self.command[:,0]
+        flat_pos_w[:, 2] = self.command.squeeze(1)
         flat_quat_w = torch.zeros_like(base_quat_w)
         flat_quat_w[:, 0] = 1.
         # display markers

@@ -26,7 +26,6 @@ class ClipRewardManager(RewardManager):
             self._reward_buf += value
             # update episodic sum
             self._episode_sums[name] += value
-
             # Update current reward for this step.
             self._step_reward[:, term_idx] = value / dt
 

@@ -31,8 +31,9 @@ class ArmTargetCommand(CommandTerm):
         """
         self.step_dt = env.step_dt
         
-        self.wrist_indices = self.robot.find_joints(cfg.body_names)[0]
+        self.wrist_indices = self.robot.find_bodies(cfg.body_names)[0]
         self.ori_wrist_pos = self.robot.data.body_link_pose_w[:, self.wrist_indices, :7].clone() # [num_envs, 2, 7], two hands
+        self.fixed_ori_wrist_pos = self.ori_wrist_pos.clone()
         
         self.target_wp, self.num_pairs, self.num_wp = sample_wp(self.device, num_points=cfg.total_num_points, num_wp=cfg.num_way_points, ranges=cfg.ranges) # relative, self.target_wp.shape=[num_pairs, num_wp, 2, 7]
         self.target_wp_i = torch.randint(0, self.num_pairs, (self.num_envs,), device=self.device) # for each env, choose one seq, [num_envs]
@@ -44,7 +45,7 @@ class ArmTargetCommand(CommandTerm):
         self.delayed_obs_target_wp_steps = 0.0
         self.delayed_obs_target_wp_steps_int = sample_int_from_float(self.delayed_obs_target_wp_steps)
 
-        self.ref_wrist_pos = self.target_wp[self.target_wp_i, self.target_wp_j] + self.ori_wrist_pos # [num_envs, 2, 7], two hands
+        self.ref_wrist_pos = self.target_wp[self.target_wp_i, self.target_wp_j] + self.fixed_ori_wrist_pos # [num_envs, 2, 7], two hands
         self.delayed_obs_target_wp = self.target_wp[self.target_wp_i, torch.maximum(self.target_wp_j - self.delayed_obs_target_wp_steps_int, torch.tensor(0))]
 
         self.metrics["error_arm"] = torch.zeros(self.num_envs, device=self.device)
@@ -52,14 +53,14 @@ class ArmTargetCommand(CommandTerm):
 
     def __str__(self) -> str:
         """Return a string representation of the command generator."""
-        msg = "BaseHeightCommand:\n"
+        msg = "ArmTargetCommand:\n"
         msg += f"\tCommand dimension: {tuple(self.command.shape[1:])}\n"
         return msg
 
     @property
     def command(self) -> torch.Tensor:
         """# (num_envs, 2, 7) -> (num_envs, 2 x 7)"""
-        return self.ref_wrist_pos.reshape(self.env.num_envs, -1)
+        return self.ref_wrist_pos.reshape(self.env.num_envs, -1).clone()
     
     def _update_metrics(self):
         # time for which the command was executed
@@ -67,13 +68,13 @@ class ArmTargetCommand(CommandTerm):
         max_command_step = max_command_time / self._env.step_dt
         # # logs data
         self.metrics["error_arm"] += (
-            torch.norm(self.ref_wrist_pos - self.robot.data.body_link_pose_w[:, self.wrist_indices, :7], dim=(1,2)) / max_command_step
+            torch.norm(self.ref_wrist_pos[:, :, :3] - self.robot.data.body_link_pose_w[:, self.wrist_indices, :3], dim=(1,2)) / max_command_step
         )
 
     def compute(self, dt: float):
         self._update_metrics()
         
-        self.ref_wrist_pos = self.target_wp[self.target_wp_i, self.target_wp_j] + self.ori_wrist_pos # [num_envs, 2, 7], two hands
+        self.ref_wrist_pos = self.target_wp[self.target_wp_i, self.target_wp_j] + self.fixed_ori_wrist_pos # [num_envs, 2, 7], two hands
         self.delayed_obs_target_wp = self.target_wp[self.target_wp_i, torch.maximum(self.target_wp_j - self.delayed_obs_target_wp_steps_int, torch.tensor(0))]
         resample_env_ids = torch.arange(self.num_envs, dtype=torch.long, device =self.device) if self.env.common_step_counter % self.target_wp_update_steps_int== 0 else []
         resample_i = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
@@ -97,7 +98,7 @@ class ArmTargetCommand(CommandTerm):
         pass 
     
     def _resample_command(self, env_ids: Sequence[int]):
-        self.ref_wrist_pos = self.target_wp[self.target_wp_i, self.target_wp_j] + self.ori_wrist_pos # [num_envs, 2, 7], two hands
+        self.ref_wrist_pos = self.target_wp[self.target_wp_i, self.target_wp_j] + self.fixed_ori_wrist_pos # [num_envs, 2, 7], two hands
         self.delayed_obs_target_wp = self.target_wp[self.target_wp_i, torch.maximum(self.target_wp_j - self.delayed_obs_target_wp_steps_int, torch.tensor(0))]
         resample_i = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
         self.target_wp_j[env_ids] = 0
@@ -123,6 +124,6 @@ class ArmTargetCommand(CommandTerm):
         if not self.robot.is_initialized:
             return
         self.ori_wrist_pos = self.robot.data.body_link_pose_w[:, self.wrist_indices, :7].clone() # [num_envs, 2, 7], two hands
-        self.target_arm_visualizer.visualize(self.ref_wrist_pos.clone()[:,:, :3].reshape(-1,3))
+        self.target_arm_visualizer.visualize(self.ref_wrist_pos.clone()[:,:, :3].reshape(-1,3) )
         self.current_arm_visualizer.visualize(self.ori_wrist_pos.clone()[:,:, :3].reshape(-1,3))
 

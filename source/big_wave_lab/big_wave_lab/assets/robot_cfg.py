@@ -8,9 +8,95 @@ import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets.articulation import ArticulationCfg
 import os
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 
 # from whole_body_tracking.assets import ASSET_DIR
 ASSET_PATH = os.path.dirname(__file__)
+
+H1_2_CFG = ArticulationCfg(
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=f"{ASSET_PATH}/robots/h1_wrist/h1_2_handless.usd",
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+            retain_accelerations=False,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=1000.0,
+            max_depenetration_velocity=1.0,
+        ),
+        articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            enabled_self_collisions=False, solver_position_iteration_count=4, solver_velocity_iteration_count=4
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 1.05),
+        joint_pos={
+            ".*_hip_yaw_.*": 0.0,
+            ".*_hip_roll_.*": 0.0,
+            ".*_hip_pitch_.*": -0.16,  # -16 degrees
+            ".*_knee_.*": 0.36,  # 45 degrees
+            ".*_ankle_pitch_.*": -0.2,  # -30 degrees
+            ".*_ankle_roll_.*": 0.0,  # -30 degrees
+            "torso_.*": 0.0,
+            ".*_shoulder_pitch_.*": 0.0,
+            ".*_shoulder_roll_.*": 0.0,
+            ".*_shoulder_yaw_.*": 0.0,
+            ".*_elbow_.*": 0.0,
+        },
+        joint_vel={".*": 0.0},
+    ),
+    soft_joint_pos_limit_factor=0.9,
+    actuators={
+        "legs": ImplicitActuatorCfg(
+            joint_names_expr=[".*_hip_yaw_.*", ".*_hip_roll_.*", ".*_hip_pitch_.*", ".*_knee_.*", "torso_.*"],
+            effort_limit_sim=300,
+            stiffness={
+                ".*_hip_yaw_.*": 200.0,
+                ".*_hip_roll_.*": 200.0,
+                ".*_hip_pitch_.*": 200.0,
+                ".*_knee_.*": 300.0,
+                "torso_.*": 300.0,
+            },
+            damping={
+                ".*_hip_yaw_.*": 2.5,
+                ".*_hip_roll_.*": 2.5,
+                ".*_hip_pitch_.*": 2.5,
+                ".*_knee_.*": 4.0,
+                "torso_.*": 6.0,
+            },
+        ),
+        "feet": ImplicitActuatorCfg(
+            joint_names_expr=[".*_ankle_pitch_.*", ".*_ankle_roll_.*"],
+            effort_limit_sim=100,
+            stiffness={
+                ".*_ankle_pitch_.*": 40.0,
+                ".*_ankle_roll_.*": 40.0,
+                },
+            damping={
+                ".*_ankle_pitch_.*": 2.0,
+                ".*_ankle_roll_.*": 2.0,
+                },
+        ),
+        "arms": ImplicitActuatorCfg(
+            joint_names_expr=[".*_shoulder_pitch_.*", ".*_shoulder_roll_.*", ".*_shoulder_yaw_.*", ".*_elbow_.*"],
+            effort_limit_sim=300,
+            stiffness={
+                ".*_shoulder_pitch_.*": 100.0,
+                ".*_shoulder_roll_.*": 100.0,
+                ".*_shoulder_yaw_.*": 100.0,
+                ".*_elbow_.*": 100.0,
+            },
+            damping={
+                ".*_shoulder_pitch_.*": 2.0,
+                ".*_shoulder_roll_.*": 2.0,
+                ".*_shoulder_yaw_.*": 2.0,
+                ".*_elbow_.*": 2.0,
+            },
+        ),
+    },
+)
 
 # ============================================================================
 # TienkungPro Training Config (Lightweight - decimated meshes, no cameras)
