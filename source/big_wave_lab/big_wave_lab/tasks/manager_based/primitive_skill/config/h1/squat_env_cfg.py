@@ -85,7 +85,7 @@ class SquatCommandsCfg(CommandsCfg):
             base_height_target=1.0,
             debug_vis=True,
             ranges=mdp.BaseHeightCommandCfg.Ranges(
-                base_height_std=0.2, base_height_scale=(0.2, 1.1)
+                base_height_std=0.2, base_height_scale=(0.2, 1.05)
             ),
         )
 
@@ -125,7 +125,7 @@ class H1SquatFlatEnvCfg_PLAY(H1SquatFlatEnvCfg):
         super().__post_init__()
         
         # make a smaller scene for play
-        self.scene.num_envs = 3
+        self.scene.num_envs = 1
         self.scene.env_spacing = 2.5
         self.episode_length_s = 40.0
         # disable randomization for play

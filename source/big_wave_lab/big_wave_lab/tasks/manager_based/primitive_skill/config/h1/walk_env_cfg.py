@@ -180,7 +180,11 @@ class WalkRewardCfg(RewardsCfg):
         func=mdp.action_smoothness, 
         weight=-0.002, 
     )
-
+    undesired_contacts = RewTerm(
+        func=mdp.undesired_contacts, 
+        weight=-1., 
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["pelvis", ".*torso_link", ".*_shoulder_.*",  ".*_elbow_.*", ".*_wrist_.*"]), "threshold": 1.0},
+    )
     def __post_init__(self):
         super().__post_init__()
         self.default_joint_pos.params["left_cfg"].joint_names = ["left_hip_yaw_.*", "left_hip_roll_.*"]
@@ -188,7 +192,7 @@ class WalkRewardCfg(RewardsCfg):
         self.feet_distance.params["asset_cfg"].body_names = [".*_ankle_roll_.*"]
         self.feet_distance.weight = 0.2 
         
-        self.upper_body_pos.params["asset_cfg"].joint_names = ["torso_.*"]
+        self.upper_body_pos.params["asset_cfg"].joint_names = ["torso_.*", ".*_shoulder_.*", ".*_elbow_.*", ".*_wrist_.*"]
         self.upper_body_pos.weight = 0.5
 
 @configclass
@@ -233,7 +237,6 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
         # post init of parent
         super().__post_init__()
         robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-        robot.spawn.articulation_props.enabled_self_collisions = True
         ## scene set
         self.scene.robot = robot 
         self.scene.terrain.terrain_type = "generator"

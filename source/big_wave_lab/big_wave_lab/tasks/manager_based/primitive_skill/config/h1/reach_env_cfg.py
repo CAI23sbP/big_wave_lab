@@ -114,7 +114,6 @@ class H1ReachFlatEnvCfg(PosingFlatEnvCfg):
         # post init of parent
         super().__post_init__()
         robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-        robot.spawn.articulation_props.enabled_self_collisions = True
         self.scene.robot = robot 
         ## observation set
         

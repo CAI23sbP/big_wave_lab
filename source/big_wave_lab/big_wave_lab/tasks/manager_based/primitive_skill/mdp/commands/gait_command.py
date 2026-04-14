@@ -48,8 +48,11 @@ class GaitCommand(CommandTerm):
         return self.vel_command_b.clone()
     
     def _update_metrics(self):
-        self.metrics["tracking_lin_vel"] += torch.exp(-torch.sum(torch.square(self.command[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2]), dim=1) * self.cfg.tracking_sigma)
-        self.metrics["tracking_ang_vel"] += torch.exp(-torch.sum(torch.square(self.command[:, 4] - self.robot.data.root_ang_vel_b[:, 2])) * self.cfg.tracking_sigma)
+        
+        max_command_time = self.cfg.resampling_time_range[1]
+        max_command_step = max_command_time / self._env.step_dt
+        self.metrics["tracking_lin_vel"] += torch.exp(-torch.sum(torch.square(self.command[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2]), dim=1) * self.cfg.tracking_sigma) / max_command_step
+        self.metrics["tracking_ang_vel"] += torch.exp(-torch.sum(torch.square(self.command[:, 4] - self.robot.data.root_ang_vel_b[:, 2])) * self.cfg.tracking_sigma) / max_command_step
     
     @property
     def ref_dof_pos(self):

@@ -1,19 +1,11 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
 from __future__ import annotations
 
 import torch
 from dataclasses import MISSING
 from typing import TYPE_CHECKING
 
-import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation
 from isaaclab.managers import ActionTerm, ActionTermCfg, ObservationGroupCfg, ObservationManager
-from isaaclab.markers import VisualizationMarkers
-from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import check_file_path, read_file
 
@@ -23,43 +15,67 @@ if TYPE_CHECKING:
 
 class PreTrainedSkillPolicyAction(ActionTerm):
     cfg: PreTrainedSkillPolicyActionCfg
+
     def __init__(self, cfg: PreTrainedSkillPolicyActionCfg, env: ManagerBasedRLEnv) -> None:
-        # initialize the action term
         super().__init__(cfg, env)
 
         self.robot: Articulation = env.scene[cfg.asset_name]
-        self._scale = cfg.scale
 
-        if not check_file_path(cfg.policy_path):
-            raise FileNotFoundError(f"Policy file '{cfg.policy_path}' does not exist.")
-        file_bytes = read_file(cfg.policy_path)
-        self.policy = torch.jit.load(file_bytes).to(env.device).eval()
+        # 정책 로드 순서를 고정
+        self.policy_names = list(cfg.policy_paths.keys())
+        self.num_policies = len(self.policy_names)
 
+        self.policies = []
+        for policy_name in self.policy_names:
+            policy_path = cfg.policy_paths[policy_name]
+            if not check_file_path(policy_path):
+                raise FileNotFoundError(f"Policy file '{policy_path}' does not exist.")
+            file_bytes = read_file(policy_path)
+            self.policies.append(torch.jit.load(file_bytes).to(env.device).eval())
+
+        # high-level input action: [num_envs, num_policies]
         self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
+
         self._low_level_action_term: ActionTerm = cfg.low_level_actions.class_type(cfg.low_level_actions, env)
-        self.residual_actions = torch.zeros(self.num_envs, self._low_level_action_term.action_dim, device=self.device)
+        self.low_level_actions = torch.zeros(
+            self.num_envs, self._low_level_action_term.action_dim, device=self.device
+        )
+
+        # per-env transition state
+        self.current_policy_idx = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
+        self.target_policy_idx = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
+        self.transition_alpha = torch.ones(self.num_envs, device=self.device)
+
+        # transition speed per low-level update
+        self.transition_rate = cfg.transition_rate
 
         def last_action():
-            # reset the low level actions if the episode was reset
             if hasattr(env, "episode_length_buf"):
-                self.residual_actions[env.episode_length_buf == 0, :] = 0
-            return self.residual_actions
+                reset_env_ids = env.episode_length_buf == 0
+                self.low_level_actions[reset_env_ids, :] = 0.0
+                self.current_policy_idx[reset_env_ids] = 0
+                self.target_policy_idx[reset_env_ids] = 0
+                self.transition_alpha[reset_env_ids] = 1.0
+            return self.low_level_actions
 
-        # remap some of the low level observations to internal observations
+        # low-level obs remap
         cfg.low_level_observations.actions.func = lambda dummy_env: last_action()
         cfg.low_level_observations.actions.params = dict()
-        cfg.low_level_observations.velocity_commands.func = lambda dummy_env: self._raw_actions
+
+        cfg.low_level_observations.velocity_commands.func = (
+            lambda dummy_env: torch.zeros(self.num_envs, self.num_policies, device=self.device)
+        )
         cfg.low_level_observations.velocity_commands.params = dict()
-
-        # add the low level observations to the observation manager
-        self._low_level_obs_manager = ObservationManager({"ll_policy": cfg.low_level_observations}, env)
-
-        self._counter = 0
         
+        self.high_level_command = env.command_manager.get_command(cfg.high_level_command_name)
+        
+        self._low_level_obs_manager = ObservationManager({"ll_policy": cfg.low_level_observations}, env)
+        self._counter = 0
 
     @property
     def action_dim(self) -> int:
-        return len(self.robot.data.joint_names) # -> joint num
+        # A/B/C 선택용
+        return self.num_policies
 
     @property
     def raw_actions(self) -> torch.Tensor:
@@ -68,39 +84,65 @@ class PreTrainedSkillPolicyAction(ActionTerm):
     @property
     def processed_actions(self) -> torch.Tensor:
         return self.raw_actions
-    
+
     def process_actions(self, actions: torch.Tensor):
+        # actions shape: [num_envs, 3]
         self._raw_actions[:] = actions
+
+        # target이 바뀌면 전이 시작
+        selected_idx = self.high_level_command
+        changed = selected_idx != self.target_policy_idx
+        self.target_policy_idx[changed] = selected_idx[changed]
+        self.transition_alpha[changed] = 0.0
 
     def apply_actions(self):
         if self._counter % self.cfg.low_level_decimation == 0:
             low_level_obs = self._low_level_obs_manager.compute_group("ll_policy")
-            self.residual_actions[:] = self.policy(low_level_obs)
-            self.residual_actions += self._raw_actions * self._scale 
-            self._low_level_action_term.process_actions(self.residual_actions)
+
+            all_policy_actions = []
+            for policy in self.policies:
+                all_policy_actions.append(policy(low_level_obs))
+            all_policy_actions = torch.stack(all_policy_actions, dim=0)
+
+            env_ids = torch.arange(self.num_envs, device=self.device)
+
+            current_actions = all_policy_actions[self.current_policy_idx, env_ids]  # [N, act_dim]
+            target_actions = all_policy_actions[self.target_policy_idx, env_ids]    # [N, act_dim]
+
+            # A -> B 부드러운 전이
+            self.low_level_actions[:] = (1.0 - self._raw_actions) * current_actions + self._raw_actions * target_actions
+
+            self._low_level_action_term.process_actions(self.low_level_actions)
+
+            # alpha 업데이트
+            not_done = self.transition_alpha < 1.0
+            self.transition_alpha[not_done] = torch.clamp(
+                self.transition_alpha[not_done] + self.transition_rate, max=1.0
+            )
+
+            # 전이 완료 시 current <- target
+            done = self.transition_alpha >= 1.0
+            self.current_policy_idx[done] = self.target_policy_idx[done]
+
             self._counter = 0
+
         self._low_level_action_term.apply_actions()
         self._counter += 1
 
+
 @configclass
 class PreTrainedSkillPolicyActionCfg(ActionTermCfg):
-    """Configuration for pre-trained policy action term.
-
-    See :class:`PreTrainedPolicyAction` for more details.
-    """
-
     class_type: type[ActionTerm] = PreTrainedSkillPolicyAction
-    """ Class of the action term."""
+
     asset_name: str = MISSING
-    """Name of the asset in the environment for which the commands are generated."""
-    policy_path: str = MISSING
-    """Path to the low level policy (.pt files)."""
-    low_level_decimation: int = 10
-    """Decimation factor for the low level action term."""
+    policy_paths: dict[str, str] = MISSING
+
+    low_level_decimation: int = 1
     low_level_actions: ActionTermCfg = MISSING
-    """Low level action configuration."""
     low_level_observations: ObservationGroupCfg = MISSING
-    """Low level observation configuration."""
+
+    high_level_command_name: str = MISSING
     debug_vis: bool = True
-    """Whether to visualize debug information. Defaults to False."""
-    scale: float = MISSING
+    
+    # low-level update마다 alpha가 얼마나 증가할지
+    transition_rate: float = 0.05

@@ -48,7 +48,10 @@ class ArmTargetCommand(CommandTerm):
         self.ref_wrist_pos = self.target_wp[self.target_wp_i, self.target_wp_j] + self.fixed_ori_wrist_pos # [num_envs, 2, 7], two hands
         self.delayed_obs_target_wp = self.target_wp[self.target_wp_i, torch.maximum(self.target_wp_j - self.delayed_obs_target_wp_steps_int, torch.tensor(0))]
 
-        self.metrics["error_arm"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_right_arm_transition"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_left_arm_transition"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_right_arm_orientation"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_left_arm_orientation"] = torch.zeros(self.num_envs, device=self.device)
         self.env = env
 
     def __str__(self) -> str:
@@ -67,8 +70,17 @@ class ArmTargetCommand(CommandTerm):
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
         # # logs data
-        self.metrics["error_arm"] += (
-            torch.norm(self.ref_wrist_pos[:, :, :3] - self.robot.data.body_link_pose_w[:, self.wrist_indices, :3], dim=(1,2)) / max_command_step
+        self.metrics["error_right_arm_transition"] += (
+            torch.norm(self.ref_wrist_pos[:, 0, :3] - self.robot.data.body_link_pose_w[:, self.wrist_indices[0], :3], dim=-1) / max_command_step
+        )
+        self.metrics["error_right_arm_transition"] += (
+            torch.norm(self.ref_wrist_pos[:, 1, :3] - self.robot.data.body_link_pose_w[:, self.wrist_indices[1], :3], dim=-1) / max_command_step
+        )
+        self.metrics["error_right_arm_orientation"] += (
+            torch.norm(self.ref_wrist_pos[:, 0, 3:] - self.robot.data.body_link_pose_w[:, self.wrist_indices[0], 3:], dim=-1) / max_command_step
+        )
+        self.metrics["error_left_arm_orientation"] += (
+            torch.norm(self.ref_wrist_pos[:, 1, 3:] - self.robot.data.body_link_pose_w[:, self.wrist_indices[1], 3:], dim=-1) / max_command_step
         )
 
     def compute(self, dt: float):

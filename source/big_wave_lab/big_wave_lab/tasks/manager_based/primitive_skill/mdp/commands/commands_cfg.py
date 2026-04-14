@@ -12,7 +12,7 @@ from .arm_target_command import ArmTargetCommand
 from .gait_command import GaitCommand
 
 @configclass
-class SkillBlenderCommandCfg(CommandTermCfg):
+class PrimitiveSkillCommandCfg(CommandTermCfg):
 
     class_type = MISSING 
     
@@ -30,7 +30,7 @@ class SkillBlenderCommandCfg(CommandTermCfg):
     ranges: Ranges = MISSING
     
 @configclass
-class BaseHeightCommandCfg(SkillBlenderCommandCfg):
+class BaseHeightCommandCfg(PrimitiveSkillCommandCfg):
     """Configuration for the uniform velocity command generator."""
 
     class_type = BaseHeightCommand
@@ -82,7 +82,7 @@ class BaseHeightCommandCfg(SkillBlenderCommandCfg):
 
 
 @configclass
-class ArmTargetCommandCfg(SkillBlenderCommandCfg):
+class ArmTargetCommandCfg(PrimitiveSkillCommandCfg):
     """Configuration for the uniform velocity command generator."""
 
     class_type = ArmTargetCommand
