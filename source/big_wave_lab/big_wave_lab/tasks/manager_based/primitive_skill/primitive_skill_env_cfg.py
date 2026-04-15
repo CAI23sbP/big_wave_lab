@@ -64,7 +64,7 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
     
-    pose_command = mdp.SkillBlenderCommandCfg(
+    pose_command = mdp.PrimitiveSkillCommandCfg(
         asset_name="robot",
         resampling_time_range=(0, 10.0),
         total_num_points=1000000,

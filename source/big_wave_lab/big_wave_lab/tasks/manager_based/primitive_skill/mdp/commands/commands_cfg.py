@@ -23,6 +23,9 @@ class PrimitiveSkillCommandCfg(CommandTermCfg):
     num_way_points: int = MISSING 
     """number of waypoints"""
 
+    command_size: int = MISSING
+    """for high level policy"""
+    
     @configclass
     class Ranges:
         pass 
@@ -37,6 +40,8 @@ class BaseHeightCommandCfg(PrimitiveSkillCommandCfg):
     
     base_height_target: float = MISSING
     """default target of robot's height"""
+    
+    command_size: int = 1
     
     @configclass
     class Ranges:
@@ -88,6 +93,8 @@ class ArmTargetCommandCfg(PrimitiveSkillCommandCfg):
     class_type = ArmTargetCommand
 
     body_names: list[str] = MISSING 
+    
+    command_size: int = 6
     
     @configclass
     class Ranges:
@@ -149,6 +156,8 @@ class GaitCommandCfg(CommandTermCfg):
     max_curriculum: float = MISSING
     
     target_joint_pos_scale: float = MISSING 
+    
+    command_size: int = 5
     
     @configclass
     class Ranges:

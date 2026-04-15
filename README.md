@@ -43,18 +43,18 @@ python3 scripts/rsl_rl/play.py  --task Isaac-Walk-Rough-Unitree-H1-Play-v0
 
 ## 4. Train downstram task
 
-### 4.1. pick and place
+### 4.1. transition
 ```bash
-python3 scripts/rsl_rl/train.py  --task Isaac-Pick-Place-Unitree-H1-v0
+python3 scripts/rsl_rl/train.py --task Isaac-Transition-Flat-Unitree-H1-v0 --headless
 ```
 
 
 ## 5. Play downstram task
 
 
-### 4.1. pick and place
+### 5.1. transition
 ```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Pick-Place-Unitree-H1-Play-v0
+python3 scripts/rsl_rl/play.py  --task Isaac-Transition-Flat-Unitree-H1-Play-v0
 ```
 
 

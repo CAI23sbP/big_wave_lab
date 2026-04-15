@@ -25,12 +25,10 @@ class SkillSelectCommand(CommandTerm):
         self.robot: Articulation = env.scene[cfg.asset_name]
         self.step_dt = env.step_dt
         self._num_skills = cfg.num_skills
-
         
-        self.primitive_action = env.action_manager.get_term(cfg.action_name).primitive_action
         self.select_command = F.one_hot(torch.zeros(self.num_envs, device=self.device).long(), \
                             num_classes=self._num_skills).float()
-        self.metrics["error_transition"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_target_pos"] = torch.zeros(self.num_envs, device=self.device)
         self.env = env
 
     def __str__(self) -> str:
@@ -48,7 +46,7 @@ class SkillSelectCommand(CommandTerm):
     def _update_metrics(self):
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
-        self.metrics["error_transition"] = torch.norm((self.robot.data.joint_pos - self.primitive_action), dim=-1) / max_command_step
+        self.metrics["error_target_pos"] = torch.norm((self.robot.data.joint_pos - self._env.action_manager.get_term(self.cfg.action_name).target_primitive_action), dim=-1) / max_command_step
         
     def _resample_command(self, env_ids: Sequence[int]):
         # sample select idx
@@ -78,7 +76,7 @@ class SkillSelectCommand(CommandTerm):
         robot = self.env.scene["robot"]
 
         root_pos = robot.data.root_pos_w.clone()   
-        root_pos[:, 2] += 0.5                    
+        root_pos[:, 2] += 1.5                    
 
         skill_ids = torch.argmax(self.select_command, dim=-1)  
         
@@ -86,3 +84,4 @@ class SkillSelectCommand(CommandTerm):
             translations=root_pos,
             marker_indices=skill_ids,
         )
+        

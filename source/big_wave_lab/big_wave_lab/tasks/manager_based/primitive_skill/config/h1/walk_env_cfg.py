@@ -257,6 +257,7 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
             ".*torso_link", 
             ".*_shoulder_.*", 
             ".*_elbow_.*",
+            ".*_wrist_.*"
         ]
 
 @configclass
