@@ -22,7 +22,7 @@ def vel_command_level(
     command: GaitCommand = env.command_manager.get_term(command_name)
     max_command_time = command.cfg.resampling_time_range[1]
     max_command_step = max_command_time / env.step_dt
-    if torch.mean(command.metrics["tracking_lin_vel"][env_ids] * max_command_step) / env.max_episode_length  > 0.8 * threshold:
+    if torch.mean(command.curriculum[env_ids] * max_command_step) / env.max_episode_length  > 0.8 * threshold:
         command.cfg.lin_vel_x[0] = torch.clip(command.cfg.lin_vel_x[0] - 0.5, -command.cfg.max_curriculum, 0.)
         command.cfg.lin_vel_x[1] = torch.clip(command.cfg.lin_vel_x[1] + 0.5, 0., command.cfg.max_curriculum)
 

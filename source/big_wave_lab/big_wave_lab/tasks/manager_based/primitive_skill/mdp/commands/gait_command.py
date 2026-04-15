@@ -30,6 +30,7 @@ class GaitCommand(CommandTerm):
         
         self._sin_pos = torch.zeros(env.num_envs).to(env.device)
         self._cos_pos = torch.zeros(env.num_envs).to(env.device)
+        self._curriculum = torch.zeros(env.num_envs).to(env.device)
         self.metrics["tracking_lin_vel"] = torch.zeros(env.num_envs).to(env.device)
         self.metrics["tracking_ang_vel"] = torch.zeros(env.num_envs).to(env.device)
         self.vel_command_b = torch.zeros(env.num_envs, 2+3).to(env.device)
@@ -47,12 +48,24 @@ class GaitCommand(CommandTerm):
         """# (num_envs, 5) : gait 2 + lin_vel 2 + head 1 """
         return self.vel_command_b.clone()
     
+    def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, float]:
+        if env_ids is None:
+            env_ids = slice(None)
+        self._curriculum[env_ids] = 0.
+        return super().reset(env_ids)
+
+    @property
+    def curriculum(self) -> torch.Tensor:
+        return self._curriculum.clone()
+    
     def _update_metrics(self):
         
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
-        self.metrics["tracking_lin_vel"] += torch.exp(-torch.sum(torch.square(self.command[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2]), dim=1) * self.cfg.tracking_sigma) / max_command_step
-        self.metrics["tracking_ang_vel"] += torch.exp(-torch.sum(torch.square(self.command[:, 4] - self.robot.data.root_ang_vel_b[:, 2])) * self.cfg.tracking_sigma) / max_command_step
+        self.metrics["tracking_lin_vel"] += torch.norm(self.vel_command_b[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2], dim=-1) / max_command_step
+        self.metrics["tracking_ang_vel"] += torch.abs(self.vel_command_b[:, 4] - self.robot.data.root_ang_vel_b[:, 2]) / max_command_step
+
+        self._curriculum += torch.exp(-torch.sum(torch.square(self.vel_command_b[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2]), dim=1) * self.cfg.tracking_sigma) / max_command_step
     
     @property
     def ref_dof_pos(self):
@@ -77,17 +90,40 @@ class GaitCommand(CommandTerm):
         scale_2 = 2 * self.cfg.target_joint_pos_scale
         sin_pos_l[sin_pos_l > 0] = 0
         self._ref_dof_pos = torch.zeros_like(self.robot.data.default_joint_pos)
-        
-        self._ref_dof_pos[:, 2] = sin_pos_l * scale_1 # left_hip_pitch_joint
-        self._ref_dof_pos[:, 3] = sin_pos_l * scale_2 # left_knee_joint
-        self._ref_dof_pos[:, 4] = sin_pos_l * scale_1 # left_ankle_joint
+        # print(self.robot.data.joint_names)
+        # ['left_hip_yaw_joint', 0
+        #  'right_hip_yaw_joint', 1
+        #  'torso_joint', 2
+        #  'left_hip_pitch_joint',3 
+        #  'right_hip_pitch_joint', 4 
+        #  'left_shoulder_pitch_joint', 5 
+        #  'right_shoulder_pitch_joint',  6
+        #  'left_hip_roll_joint', 7
+        #  'right_hip_roll_joint',  
+        #  'left_shoulder_roll_joint', 
+        #  'right_shoulder_roll_joint', 
+        #  'left_knee_joint', 
+        #  'right_knee_joint', 
+        #  'left_shoulder_yaw_joint', 
+        #  'right_shoulder_yaw_joint', 
+        #  'left_ankle_pitch_joint', 
+        #  'right_ankle_pitch_joint', 
+        #  'left_elbow_joint', 
+        #  'right_elbow_joint', 
+        #  'left_ankle_roll_joint', 
+        #  'right_ankle_roll_joint', 
+        #  'left_wrist_roll_joint', 'right_wrist_roll_joint', 'left_wrist_pitch_joint', 'right_wrist_pitch_joint', 'left_wrist_yaw_joint', 'right_wrist_yaw_joint']
+
+        self._ref_dof_pos[:, 3] = sin_pos_l * scale_1 # left_hip_pitch_joint   
+        self._ref_dof_pos[:, 11] = sin_pos_l * scale_2 # left_knee_joint
+        self._ref_dof_pos[:, 19] = sin_pos_l * scale_1 # left_ankle_joint 19
         
         sin_pos_r[sin_pos_r < 0] = 0
-        self._ref_dof_pos[:, 7] = sin_pos_r * scale_1 # right_hip_pitch_joint
-        self._ref_dof_pos[:, 8] = sin_pos_r * scale_2 # right_knee_joint
-        self._ref_dof_pos[:, 9] = sin_pos_r * scale_1 # right_ankle_joint
+        self._ref_dof_pos[:, 4] = sin_pos_r * scale_1 # right_hip_pitch_joint
+        self._ref_dof_pos[:, 12] = sin_pos_r * scale_2 # right_knee_joint
+        self._ref_dof_pos[:, 20] = sin_pos_r * scale_1 # right_ankle_joint 20
         self._ref_dof_pos[torch.abs(self._sin_pos) < 0.1] = 0
-
+        
     def _resample_command(self, env_ids: Sequence[int]):
         self.metrics["tracking_lin_vel"][env_ids] = 0.0
         self.metrics["tracking_ang_vel"][env_ids] = 0.0

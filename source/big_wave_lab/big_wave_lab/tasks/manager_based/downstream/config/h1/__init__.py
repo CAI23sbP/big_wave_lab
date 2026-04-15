@@ -33,3 +33,28 @@ gym.register(
     },
 )
 
+
+## pick_and_place task
+gym.register(
+    id="Isaac-Pick-and-Place-Flat-Unitree-H1-v0",
+    entry_point="big_wave_lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    order_enforce = False,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.pick_and_place_env_cfg:H1PickandPlaceFlatEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.pick_and_place_ppo_cfg:H1PickandPlaceFlatPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Pick-and-Place-Flat-Unitree-H1-Play-v0",
+    entry_point="big_wave_lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    order_enforce = False,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.pick_and_place_env_cfg:H1PickandPlaceFlatEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.pick_and_place_ppo_cfg:H1PickandPlaceFlatPPORunnerCfg",
+    },
+)
+
+

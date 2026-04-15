@@ -117,7 +117,7 @@ class WalkRewardCfg(RewardsCfg):
         params={
             "min_dist": 0.2,
             "max_dist": 0.5,
-            "asset_cfg": SceneEntityCfg("robot", joint_names=".*_ankle_roll_.*")
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*_knee_.*")
             }
     )
     feet_contact_forces = RewTerm(
@@ -209,7 +209,7 @@ class WalkCommandsCfg(CommandsCfg):
             debug_vis=True,
             target_joint_pos_scale = 0.17, 
             ranges=mdp.GaitCommandCfg.Ranges(
-                lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-3.14, 3.14)
+                lin_vel_x=(-1.0, 2.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-3.14, 3.14)
             ),
         )
         

@@ -125,46 +125,57 @@ def joint_pos_diff(
     return torch.exp(-2 * torch.norm(diff, dim=1)) \
             - 0.2 * torch.norm(diff, dim=1).clamp(0, 0.5)
 
-def feet_clearance(    
-    env: ManagerBasedRLEnv,
-    target_feet_height: float,
-    last_feet_z: float,
-    command_name:str,
-    sensor_cfg: SceneEntityCfg, 
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+
+
+class feet_clearance(ManagerTermBase):
+    def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRLEnv):
+        super().__init__(cfg, env)
+        self._num_feet = len(cfg.params["asset_cfg"].body_ids)
+        self._feet_height = torch.zeros(env.num_envs, self._num_feet).to(env.device)
+        self.contact_sensor: ContactSensor = env.scene.sensors[cfg.params["sensor_cfg"].name]
+        self._cycle_time = env.command_manager.get_term(cfg.params["command_name"]).cfg.cycle_time
+        self._last_feet_z = torch.ones(env.num_envs, self._num_feet).to(env.device)* cfg.params["last_feet_z"]
+        
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        target_feet_height: float,
+        last_feet_z: float,
+        command_name:str,
+        sensor_cfg: SceneEntityCfg, 
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
-    asset: Articulation = env.scene[asset_cfg.name]
-    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
-    cycle_time = env.command_manager.get_term(command_name).cfg.cycle_time
-    feet_height = torch.zeros(env.num_envs, 2).to(env.device)
-    contact = contact_sensor.data.net_forces_w_history[:, -1, sensor_cfg.body_ids, 2] > 5.
+        asset: Articulation = env.scene[asset_cfg.name]
+
+        contact = self.contact_sensor.data.net_forces_w_history[:, -1, sensor_cfg.body_ids, 2] > 5.0
+
+        # current feet z
+        feet_z = asset.data.body_link_pose_w[:, asset_cfg.body_ids, 2] - 0.05
+
+        # accumulate swing height
+        delta_z = feet_z - self._last_feet_z
+        self._feet_height += delta_z
+        self._last_feet_z.copy_(feet_z)
+
+        # gait phase
+        phase = env.episode_length_buf * env.step_dt / self._cycle_time
+        sin_pos = torch.sin(2 * torch.pi * phase)
+
+        stance_mask = torch.zeros((env.num_envs, self._num_feet), device=env.device)
+        stance_mask[:, 0] = sin_pos >= 0
+        stance_mask[:, 1] = sin_pos < 0
+        stance_mask[torch.abs(sin_pos) < 0.1] = 1.0
+
+        swing_mask = 1.0 - stance_mask
+
+        # reward near target clearance during swing
+        rew_pos = (torch.abs(self._feet_height - target_feet_height) < 0.01).float()
+        rew_pos = torch.sum(rew_pos * swing_mask, dim=1)
+
+        # when foot contacts ground, reset accumulated swing height
+        self._feet_height *= (~contact).float()
+        return rew_pos
     
-    # Get the z-position of the feet and compute the change in z-position
-    feet_z = asset.data.body_link_pose_w[:, asset_cfg.body_ids, 2] - 0.05
-    delta_z = feet_z - last_feet_z
-    feet_height += delta_z
-    last_feet_z = feet_z
-    
-    phase = env.episode_length_buf * env.step_dt / cycle_time
-
-    # Compute swing mask
-    sin_pos = torch.sin(2 * torch.pi * phase)
-    # Add double support phase
-    stance_mask = torch.zeros((env.num_envs, 2), device=env.device)
-    # left foot stance
-    stance_mask[:, 0] = sin_pos >= 0
-    # right foot stance
-    stance_mask[:, 1] = sin_pos < 0
-    # Double support phase
-    stance_mask[torch.abs(sin_pos) < 0.1] = 1
-    swing_mask = 1 - stance_mask
-    # feet height should be closed to target feet height at the peak
-    rew_pos = torch.abs(feet_height - target_feet_height) < 0.01
-    rew_pos = torch.sum(rew_pos * swing_mask, dim=1)
-    feet_height *= ~contact
-    return rew_pos.float()
-
-
 def feet_contact_number(
     env: ManagerBasedRLEnv,
     command_name:str,
@@ -254,7 +265,7 @@ def knee_distance(
 ):
     asset: Articulation = env.scene[asset_cfg.name]
     
-    knee_pos = asset.data.body_com_pos_w[:, asset_cfg.joint_ids, :2]
+    knee_pos = asset.data.body_com_pos_w[:, asset_cfg.body_ids, :2]
     knee_dist = torch.norm(knee_pos[:, 0, :] - knee_pos[:, 1, :], dim=1)
     fd = min_dist
     max_df = max_dist / 2
@@ -286,8 +297,8 @@ def vel_mismatch_exp(
     Encourages the robot to maintain a stable velocity by penalizing large deviations.
     """
     asset: Articulation = env.scene[asset_cfg.name]
-    base_lin_vel = asset.data.root_lin_vel_w
-    base_ang_vel = asset.data.root_ang_vel_w
+    base_lin_vel = asset.data.root_link_lin_vel_b
+    base_ang_vel = asset.data.root_link_ang_vel_b
 
     lin_mismatch = torch.exp(-torch.square(base_lin_vel[:, 2]) * 10)
     ang_mismatch = torch.exp(-torch.norm(base_ang_vel[:, :2], dim=1) * 5.)
@@ -309,7 +320,7 @@ def low_speed(
     """
     asset: Articulation = env.scene[asset_cfg.name]
     commands = env.command_manager.get_command(command_name)[:, 2:]
-    base_lin_vel = asset.data.root_lin_vel_w
+    base_lin_vel = asset.data.root_link_lin_vel_b
     # Calculate the absolute value of speed and command for comparison
     absolute_speed = torch.abs(base_lin_vel[:, 0])
     absolute_command = torch.abs(commands[:, 0])
@@ -345,8 +356,8 @@ def track_vel_hard(
 ):
     asset: Articulation = env.scene[asset_cfg.name]
     commands = env.command_manager.get_command(command_name)[:, 2:]
-    base_lin_vel = asset.data.root_lin_vel_w
-    base_ang_vel = asset.data.root_ang_vel_w
+    base_lin_vel = asset.data.root_link_lin_vel_b
+    base_ang_vel = asset.data.root_link_ang_vel_b
 
     lin_vel_error = torch.norm(
         commands[:, :2] - base_lin_vel[:, :2], dim=1)
@@ -364,20 +375,34 @@ def track_vel_hard(
 
 def base_acc(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")):
     asset: Articulation = env.scene[asset_cfg.name]
-    return torch.exp(-torch.norm(asset.data.body_ang_acc_w[:, asset_cfg.body_ids, :].squeeze(1), dim=1) * 3)
+    return torch.exp(-torch.norm(asset.data.body_com_acc_w[:, asset_cfg.body_ids, :].squeeze(1), dim=1) * 3)
 
-def action_smoothness(    
-    env: ManagerBasedRLEnv,
-):
-    actions = env.action_manager.action
-    last_actions = env.action_manager.prev_action
-    term_1 = torch.sum(torch.square(
-        last_actions - actions), dim=1)
-    term_2 = torch.sum(torch.square(
-        actions + last_actions - 2 * last_actions), dim=1)
-    term_3 = 0.05 * torch.sum(torch.abs(actions), dim=1)
-    return term_1 + term_2 + term_3
+class action_smoothness(ManagerTermBase):
+    def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRLEnv):
+        super().__init__(cfg, env)
 
+        action_dim = env.action_manager.action.shape[1]
+        self.last_last_actions = torch.zeros(env.num_envs, action_dim, device=env.device)
+        self.last_actions = torch.zeros(env.num_envs, action_dim, device=env.device)
+
+    def reset(self, env_ids):
+        self.last_last_actions[env_ids] = 0.0
+        self.last_actions[env_ids] = 0.0
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+    ):
+        actions = env.action_manager.action
+        term_1 = torch.sum(torch.square(actions - self.last_actions), dim=1)
+        term_2 = torch.sum(torch.square(actions + self.last_last_actions - 2 * self.last_actions), dim=1)
+        term_3 = 0.05 * torch.sum(torch.abs(actions), dim=1)
+        reward = term_1 + term_2 + term_3
+        self.last_last_actions[:] = self.last_actions
+        self.last_actions[:] = actions
+
+        return reward
+    
 def base_height_exp(    
     env: ManagerBasedRLEnv,
     command_name: str,

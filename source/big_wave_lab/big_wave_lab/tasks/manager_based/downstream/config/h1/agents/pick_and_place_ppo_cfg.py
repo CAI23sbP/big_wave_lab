@@ -4,5 +4,5 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 from .downstream_ppo_cfg import DownstreamFlatPPORunnerCfg
 
 @configclass
-class H1TransitionFlatPPORunnerCfg(DownstreamFlatPPORunnerCfg):
-    experiment_name = "h1_transition"
+class H1PickandPlaceFlatPPORunnerCfg(DownstreamFlatPPORunnerCfg):
+    experiment_name = "h1_pick_and_place"
