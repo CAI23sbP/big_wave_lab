@@ -129,14 +129,14 @@ class WalkRewardCfg(RewardsCfg):
             }
     )
     tracking_lin_vel = RewTerm(
-        func=mdp.track_lin_vel_xy_exp, 
+        func=mdp.track_lin_vel_xy, 
         weight=2.4, 
         params={
             "command_name": "pose_command",
             }
     )
     tracking_ang_vel = RewTerm(
-        func=mdp.track_ang_vel_z_exp, 
+        func=mdp.track_ang_vel_z, 
         weight=2.2, 
         params={
             "command_name": "pose_command",
@@ -244,8 +244,8 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
         self.scene.terrain.max_init_terrain_level = 10
         
         ## reward set: for matching the commands' parameter 
-        self.rewards.tracking_lin_vel.params["std"] = math.sqrt(self.commands.pose_command.tracking_sigma)
-        self.rewards.tracking_ang_vel.params["std"] = math.sqrt(self.commands.pose_command.tracking_sigma)
+        self.rewards.tracking_lin_vel.params["tracking_sigma"] = self.commands.pose_command.tracking_sigma
+        self.rewards.tracking_ang_vel.params["tracking_sigma"] = self.commands.pose_command.tracking_sigma
         
         ## event set
         self.events.add_base_mass.params["asset_cfg"].body_names = [".*torso_link"]

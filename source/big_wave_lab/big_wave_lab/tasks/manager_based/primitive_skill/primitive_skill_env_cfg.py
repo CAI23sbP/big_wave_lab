@@ -128,14 +128,14 @@ class ObservationsCfg:
             )
         rand_push_force = ObsTerm(
             func=mdp.rand_push_force, 
-            params={"event_name": "push_by_setting_force"},
+            params={"event_name": "push_force_robot"},
             scale=1.,
             history_length = 3,
             clip=(-18.0, 18.0),
             ) 
         rand_push_torque = ObsTerm(
             func=mdp.rand_push_torque, 
-            params={"event_name": "push_by_setting_force"},
+            params={"event_name": "push_force_robot"},
             scale=1.,
             history_length = 3,
             clip=(-18.0, 18.0),
@@ -344,7 +344,7 @@ class PosingFlatEnvCfg(ManagerBasedRLEnvCfg):
         self.decimation = 10
         self.episode_length_s = 24.0
         # simulation settings
-        self.sim.dt = 0.005
+        self.sim.dt = 0.001
         self.sim.render_interval = self.decimation
         self.sim.physics_material = self.scene.terrain.physics_material
         self.sim.physx.gpu_max_rigid_patch_count = 10 * 2**15

@@ -13,19 +13,29 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-def vel_command_level(    
-    env: ManagerBasedRLEnv, 
-    env_ids: Sequence[int], 
+def vel_command_level(
+    env: ManagerBasedRLEnv,
+    env_ids: Sequence[int],
     command_name: str,
-    threshold:float, 
+    threshold: float,
 ) -> torch.Tensor:
     command: GaitCommand = env.command_manager.get_term(command_name)
-    max_command_time = command.cfg.resampling_time_range[1]
-    max_command_step = max_command_time / env.step_dt
-    if torch.mean(command.curriculum[env_ids] * max_command_step) / env.max_episode_length  > 0.8 * threshold:
-        command.cfg.lin_vel_x[0] = torch.clip(command.cfg.lin_vel_x[0] - 0.5, -command.cfg.max_curriculum, 0.)
-        command.cfg.lin_vel_x[1] = torch.clip(command.cfg.lin_vel_x[1] + 0.5, 0., command.cfg.max_curriculum)
 
+    if len(env_ids) == 0:
+        return torch.tensor(0.0, device=env.device)
+
+    # _curriculum is already normalized per command horizon inside GaitCommand._update_metrics()
+    curriculum_score = torch.mean(command.curriculum[env_ids])
+
+    if curriculum_score > threshold:
+        command.cfg.ranges.lin_vel_x = (
+            float(torch.clamp(torch.tensor(command.cfg.ranges.lin_vel_x[0], device=env.device) - 0.5,
+                              min=-command.cfg.max_curriculum, max=0.0).item()),
+            float(torch.clamp(torch.tensor(command.cfg.ranges.lin_vel_x[1], device=env.device) + 0.5,
+                              min=0.0, max=command.cfg.max_curriculum).item()),
+        )
+
+    return curriculum_score
 
 def terrain_levels_vel(
     env: ManagerBasedRLEnv, env_ids: Sequence[int], command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
@@ -39,7 +49,7 @@ def terrain_levels_vel(
     # robots that walked far enough progress to harder terrains
     move_up = distance > terrain.cfg.terrain_generator.size[0] / 2
     # robots that walked less than half of their required distance go to simpler terrains
-    move_down = distance < torch.norm(command[env_ids, :2], dim=1) * env.max_episode_length_s * 0.5
+    move_down = distance < torch.norm(command[env_ids, 2:4], dim=1) * env.max_episode_length_s * 0.5
     move_down *= ~move_up
     # update terrain levels
     terrain.update_env_origins(env_ids, move_up, move_down)

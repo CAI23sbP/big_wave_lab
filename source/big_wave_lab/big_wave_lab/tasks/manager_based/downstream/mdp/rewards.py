@@ -31,9 +31,11 @@ def target_joint_pos_diff(
 def box_pos_diff(    
     env: ManagerBasedRLEnv,
     action_name: str,
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
 
-    box_pos_diff = self.box_root_states[:, :3] - self.box_goal_pos
+    object: RigidObject = env.scene[object_cfg.name]
+    box_pos_diff = object.data.root_pos_w[:, :3] - self.box_goal_pos
     box_pos_error = torch.mean(torch.abs(box_pos_diff), dim=1)
     return torch.exp(-4 * box_pos_error), box_pos_error

@@ -32,7 +32,7 @@ class ArmTargetCommand(CommandTerm):
         self.step_dt = env.step_dt
         
         self.wrist_indices = self.robot.find_bodies(cfg.body_names)[0]
-        self.ori_wrist_pos = self.robot.data.body_link_pose_w[:, self.wrist_indices, :7].clone() # [num_envs, 2, 7], two hands
+        self.ori_wrist_pos = self.robot.data.body_state_w[:, self.wrist_indices, :7].clone() # [num_envs, 2, 7], two hands
         self.fixed_ori_wrist_pos = self.ori_wrist_pos.clone()
         
         self.target_wp, self.num_pairs, self.num_wp = sample_wp(self.device, num_points=cfg.total_num_points, num_wp=cfg.num_way_points, ranges=cfg.ranges) # relative, self.target_wp.shape=[num_pairs, num_wp, 2, 7]
@@ -71,16 +71,16 @@ class ArmTargetCommand(CommandTerm):
         max_command_step = max_command_time / self._env.step_dt
         # # logs data
         self.metrics["error_right_arm_transition"] += (
-            torch.norm(self.ref_wrist_pos[:, 0, :3] - self.robot.data.body_link_pose_w[:, self.wrist_indices[0], :3], dim=-1) / max_command_step
+            torch.norm(self.ref_wrist_pos[:, 0, :3] - self.robot.data.body_state_w[:, self.wrist_indices[0], :3], dim=-1) / max_command_step
         )
         self.metrics["error_right_arm_transition"] += (
-            torch.norm(self.ref_wrist_pos[:, 1, :3] - self.robot.data.body_link_pose_w[:, self.wrist_indices[1], :3], dim=-1) / max_command_step
+            torch.norm(self.ref_wrist_pos[:, 1, :3] - self.robot.data.body_state_w[:, self.wrist_indices[1], :3], dim=-1) / max_command_step
         )
         self.metrics["error_right_arm_orientation"] += (
-            torch.norm(self.ref_wrist_pos[:, 0, 3:] - self.robot.data.body_link_pose_w[:, self.wrist_indices[0], 3:], dim=-1) / max_command_step
+            torch.norm(self.ref_wrist_pos[:, 0, 3:] - self.robot.data.body_state_w[:, self.wrist_indices[0], 3:], dim=-1) / max_command_step
         )
         self.metrics["error_left_arm_orientation"] += (
-            torch.norm(self.ref_wrist_pos[:, 1, 3:] - self.robot.data.body_link_pose_w[:, self.wrist_indices[1], 3:], dim=-1) / max_command_step
+            torch.norm(self.ref_wrist_pos[:, 1, 3:] - self.robot.data.body_state_w[:, self.wrist_indices[1], 3:], dim=-1) / max_command_step
         )
 
     def compute(self, dt: float):
@@ -135,7 +135,7 @@ class ArmTargetCommand(CommandTerm):
     def _debug_vis_callback(self, event):
         if not self.robot.is_initialized:
             return
-        self.ori_wrist_pos = self.robot.data.body_link_pose_w[:, self.wrist_indices, :7].clone() # [num_envs, 2, 7], two hands
+        self.ori_wrist_pos = self.robot.data.body_state_w[:, self.wrist_indices, :7].clone() # [num_envs, 2, 7], two hands
         self.target_arm_visualizer.visualize(self.ref_wrist_pos.clone()[:,:, :3].reshape(-1,3) )
         self.current_arm_visualizer.visualize(self.ori_wrist_pos.clone()[:,:, :3].reshape(-1,3))
 

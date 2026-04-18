@@ -1,5 +1,56 @@
 import numpy as np 
 import torch 
+import re
+import torch
+
+def _find_first_match(joint_names: list[str], patterns: list[str]) -> int | None:
+    for p in patterns:
+        regex = re.compile(p)
+        for i, name in enumerate(joint_names):
+            if regex.fullmatch(name) or regex.search(name):
+                return i
+    return None
+
+
+def build_leg_joint_map(joint_names: list[str]) -> dict[str, int | None]:
+    # left/right + sagittal joints
+    patterns = {
+        "left_hip_pitch": [
+            r".*left.*hip.*pitch.*",
+            r".*left_hip_pitch.*",
+            r".*L.*hip.*pitch.*",
+        ],
+        "right_hip_pitch": [
+            r".*right.*hip.*pitch.*",
+            r".*right_hip_pitch.*",
+            r".*R.*hip.*pitch.*",
+        ],
+        "left_knee": [
+            r".*left.*knee.*",
+            r".*left_knee.*",
+            r".*L.*knee.*",
+        ],
+        "right_knee": [
+            r".*right.*knee.*",
+            r".*right_knee.*",
+            r".*R.*knee.*",
+        ],
+        "left_ankle_pitch": [
+            r".*left.*ankle.*pitch.*",
+            r".*left_ankle_pitch.*",
+            r".*L.*ankle.*pitch.*",
+        ],
+        "right_ankle_pitch": [
+            r".*right.*ankle.*pitch.*",
+            r".*right_ankle_pitch.*",
+            r".*R.*ankle.*pitch.*",
+        ],
+    }
+
+    joint_map = {}
+    for key, pats in patterns.items():
+        joint_map[key] = _find_first_match(joint_names, pats)
+    return joint_map
 
 def sample_int_from_float(x):
     if int(x) == x:

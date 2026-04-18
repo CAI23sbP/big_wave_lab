@@ -35,9 +35,9 @@ H1_2_CFG = ArticulationCfg(
         joint_pos={
             ".*_hip_yaw_.*": 0.0,
             ".*_hip_roll_.*": 0.0,
-            ".*_hip_pitch_.*": -0.16,  # -16 degrees
-            ".*_knee_.*": 0.36,  # 45 degrees
-            ".*_ankle_pitch_.*": -0.2,  # -30 degrees
+            ".*_hip_pitch_.*": -0.4,  # -16 degrees
+            ".*_knee_.*": 0.8,  # 45 degrees
+            ".*_ankle_pitch_.*": -0.4,  # -30 degrees
             ".*_ankle_roll_.*": 0.0,  # -30 degrees
             "torso_.*": 0.0,
             ".*_shoulder_pitch_.*": 0.0,

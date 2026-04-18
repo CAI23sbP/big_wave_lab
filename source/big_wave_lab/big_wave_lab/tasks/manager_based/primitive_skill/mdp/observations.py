@@ -42,7 +42,7 @@ def body_pos_w_diff(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     asset: Articulation = env.scene[asset_cfg.name]
-    body_pos_w = asset.data.body_link_pose_w[:, asset_cfg.body_ids, :3]
+    body_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids, :3]
     ref_body_pos_w = env.command_manager.get_command(command_name).reshape(env.num_envs, len(asset_cfg.body_ids), -1)[:, :, :3]
     return (body_pos_w - ref_body_pos_w).reshape(env.num_envs, -1)
 
@@ -79,7 +79,7 @@ def body_pos_w(
 ) -> torch.Tensor:
     asset: Articulation = env.scene[asset_cfg.name]
 
-    pos = asset.data.body_link_pose_w[:, asset_cfg.body_ids, :3]
+    pos = asset.data.body_state_w[:, asset_cfg.body_ids, :3]
     pos[..., :3] = pos[..., :3] - env.scene.env_origins.unsqueeze(1)
     return pos.reshape(env.num_envs, -1)
 
@@ -88,7 +88,7 @@ def base_euler_xyz(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot") 
 ) -> torch.Tensor:
     asset: Articulation = env.scene[asset_cfg.name]
-    roll, pitch, yaw = math_utils.euler_xyz_from_quat(asset.data.root_quat_w, wrap_to_2pi = True)
+    roll, pitch, yaw = math_utils.euler_xyz_from_quat(asset.data.root_quat_w)
     return torch.cat([roll[:,None], pitch[:,None], yaw[:,None]], dim=-1)
 
 def base_mass(
@@ -122,9 +122,9 @@ def only_vel_generated_commands(
     command_name: str | None = None
     ) -> torch.Tensor:
     vel_command = env.command_manager.get_command(command_name)[:, 2:]
-    vel_command[: 0] *= scale[0]
-    vel_command[: 1] *= scale[1]
-    vel_command[: 2] *= scale[2]
+    vel_command[:, 0] *= scale[0]
+    vel_command[:, 1] *= scale[1]
+    vel_command[:, 2] *= scale[2]
     return vel_command
 
 def rescale_generated_commands(
@@ -133,9 +133,9 @@ def rescale_generated_commands(
     command_name: str | None = None
     ) -> torch.Tensor:
     vel_command = env.command_manager.get_command(command_name)
-    vel_command[: 2] *= scale[0]
-    vel_command[: 3] *= scale[1]
-    vel_command[: 4] *= scale[2]
+    vel_command[:, 2] *= scale[0]
+    vel_command[:, 3] *= scale[1]
+    vel_command[:, 4] *= scale[2]
     return vel_command
 
 def stance_mask(
