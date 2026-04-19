@@ -93,12 +93,12 @@ class ReachCommandsCfg(CommandsCfg):
             body_names = ["wrist_roll_.*.*"],
             ranges=mdp.ArmTargetCommandCfg.Ranges(
                 wrist_max_radius = 0.25,
-                l_wrist_pos_x = (-0.10, 0.25),
+                l_wrist_pos_x = (0.11, 0.25),
                 l_wrist_pos_y = (-0.10, 0.25),
-                l_wrist_pos_z = (-0.25, 0.25),
-                r_wrist_pos_x = (-0.10, 0.25),
-                r_wrist_pos_y = (-0.25, 0.10),
-                r_wrist_pos_z = (-0.25, 0.25),            
+                l_wrist_pos_z = (-0.24, 0.25),
+                r_wrist_pos_x = (0.11, 0.25),
+                r_wrist_pos_y = (-0.25, -0.10),
+                r_wrist_pos_z = (-0.24, 0.25),            
             ),
         )
         

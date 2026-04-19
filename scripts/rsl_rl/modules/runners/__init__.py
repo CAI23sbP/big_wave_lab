@@ -1,2 +1,1 @@
 from .on_policy_runner import ModifiedOnPolicyRunner
-from .amp_on_policy_runner import AmpOnPolicyRunner

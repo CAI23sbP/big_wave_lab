@@ -16,7 +16,6 @@ import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
 ##
 from big_wave_lab.assets.robot_cfg import TIENKUNG_PRO_TRAINING_CFG as PRO_CFG
 
-
 @configclass
 class WalkObservationsCfg(ObservationsCfg):
     
@@ -183,12 +182,19 @@ class WalkRewardCfg(RewardsCfg):
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts, 
         weight=-1., 
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["pelvis", "body_yaw_joint", "shoulder_.*",  "elbow_.*", "wrist_.*"]), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[
+            "pelvis", 
+            "body_yaw_joint", 
+            "shoulder_.*",  
+            "elbow_.*",
+            "knee_.*",
+            "hip_.*"
+            ]), "threshold": 1.0},
     )
     def __post_init__(self):
         super().__post_init__()
-        self.default_joint_pos.params["left_cfg"].joint_names = ["left_hip_yaw_.*", "left_hip_roll_.*"]
-        self.default_joint_pos.params["right_cfg"].joint_names = ["right_hip_yaw_.*", "right_hip_roll_.*"]
+        self.default_joint_pos.params["left_cfg"].joint_names = ["hip_yaw_l_.*", "hip_roll_l_.*"]
+        self.default_joint_pos.params["right_cfg"].joint_names = ["hip_yaw_r_.*", "hip_roll_r_.*"]
         self.feet_distance.params["asset_cfg"].body_names = ["ankle_roll_.*"]
         self.feet_distance.weight = 0.2 
         

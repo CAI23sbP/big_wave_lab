@@ -62,49 +62,64 @@ python3 scripts/rsl_rl/play.py  --task Isaac-Walk-Rough-Pro-Play-v0
 
 ## 4. Train downstram task (TODO list)
 
-### 4.1. transition (H1-2, Tienkung Pro)
+### 4.1. pick and place (H1-2, Tienkung Pro)
 ```bash
-python3 scripts/rsl_rl/train.py --task Isaac-Transition-Flat-Unitree-H1-v0 --headless
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Unitree-H1-v0 --headless
 ```
 ```bash
-python3 scripts/rsl_rl/train.py --task Isaac-Transition-Flat-Pro-v0 --headless
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Pro-v0 --headless
 ```
-
 
 ## 5. Play downstram task
 
-
-### 5.1. transition (H1-2, Tienkung Pro)
+### 5.1. pick and place (H1-2, Tienkung Pro)
 ```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Transition-Flat-Unitree-H1-Play-v0
+python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Adaptation-Unitree-H1-Play-v0
 ```
 ```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Transition-Pro-Play-v0
-```
-
-
-## 6. Train part-wise adaptation
-
-### 6.1. pick and place (H1-2, Tienkung Pro)
-```bash
-python3 scripts/rsl_rl/train.py  --task Isaac-Pick-Place-Adaptation-Unitree-H1-v0 --headless
-```
-```bash
-python3 scripts/rsl_rl/train.py  --task Isaac-Pick-Place-Adaptation-Pro-v0 --headless
+python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Adaptation-Pro-Play-v0
 ```
 
 
-## 7. Play part-wise adaptation
+## 6. Train vision based downstream task (For sim2real)
 
-
-### 7.1. pick and place (H1-2, Tienkung Pro)
+### 6.1. pick and place vision (H1-2, Tienkung Pro)
 ```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Pick-Place-Adaptation-Unitree-H1-Play-v0
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Vision-Unitree-H1-v0 --headless
 ```
 ```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Pick-Place-Adaptation-Pro-Play-v0
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Vision-Pro-v0 --headless
 ```
 
+
+## 7. Play vision based downstream task (For sim2real)
+
+### 7.1. pick and place vision (H1-2, Tienkung Pro)
+
+```bash
+python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Adaptation-Vision-Unitree-H1-Play-v0
+```
+```bash
+python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Adaptation-Vision-Pro-Play-v0
+```
+
+
+## 8. Visualize Control
+```bash
+Press 1 or 2: Move to surroundings
+
+Press 8: Move camera forward
+
+Press 4: Move camera left
+
+Press 6: Move camera right
+
+Press 5: Move camera backward
+
+Press 0: Use free camera (mouse enabled)
+
+Press 1: Do not use free camera (default)
+```
 
 ## Citation
 
@@ -117,4 +132,12 @@ If you use this code for your research, you must cite the following paper:
   journal={arXiv preprint arXiv:2506.09366},
   year={2025}
 }
+```
+
+## Contact us
+
+```
+1. sbp0783@hanyang.ac.kr
+
+2. snp0783@naver.com
 ```

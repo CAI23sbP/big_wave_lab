@@ -183,7 +183,14 @@ class WalkRewardCfg(RewardsCfg):
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts, 
         weight=-1., 
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["pelvis", ".*torso_link", ".*_shoulder_.*",  ".*_elbow_.*", ".*_wrist_.*"]), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[
+            "pelvis", 
+            ".*torso_link", 
+            ".*_shoulder_.*",  
+            ".*_elbow_.*",
+            ".*_knee_.*",
+            ".*_hip_.*"
+            ]), "threshold": 1.0},
     )
     def __post_init__(self):
         super().__post_init__()
@@ -202,12 +209,12 @@ class WalkCommandsCfg(CommandsCfg):
         self.pose_command = mdp.GaitCommandCfg(
             asset_name="robot",
             resampling_time_range=(8., 8.),
-            cycle_time=0.64,
-            tracking_sigma=5.,
             heading_control_stiffness=0.5,
             max_curriculum = 1., 
             debug_vis=True,
             target_joint_pos_scale = 0.17, 
+            cycle_time=0.64,
+            tracking_sigma=5.,
             ranges=mdp.GaitCommandCfg.Ranges(
                 lin_vel_x=(-1.0, 2.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-3.14, 3.14)
             ),

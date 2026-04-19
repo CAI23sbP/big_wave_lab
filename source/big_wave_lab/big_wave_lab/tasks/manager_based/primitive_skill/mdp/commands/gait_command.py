@@ -102,14 +102,11 @@ class GaitCommand(CommandTerm):
         self._ref_dof_pos = torch.zeros_like(self.robot.data.default_joint_pos)
 
         jm = self._leg_joint_map
-
         # left leg
         self._ref_dof_pos[:, jm["left_hip_pitch"]] = sin_pos_l * scale_1 # left_hip_pitch_joint   
         self._ref_dof_pos[:, jm["left_knee"]] = sin_pos_l * scale_2     # left_knee_joint
         self._ref_dof_pos[:, jm["left_ankle_pitch"]] = sin_pos_l * scale_1 # left_ankle_joint
         sin_pos_r[sin_pos_r < 0] = 0
-
-        # right leg
         self._ref_dof_pos[:, jm["right_hip_pitch"]] = sin_pos_r * scale_1 # right_hip_pitch_joint
         self._ref_dof_pos[:, jm["right_knee"]] = sin_pos_r * scale_2 # right_knee_joint
         self._ref_dof_pos[:, jm["right_ankle_pitch"]] = sin_pos_r * scale_1 # right_ankle_joint

@@ -7,10 +7,11 @@ import torch.nn as nn
 import torch.optim as optim
 
 from rsl_rl.modules import ActorCritic
+from modules.actor_critics import ActorCriticVision
 from rsl_rl.algorithms import PPO
 
 class ModifiedPPO(PPO):
-    policy: ActorCritic
+    policy: ActorCritic|ActorCriticVision
     def __init__(
         self,
         policy,

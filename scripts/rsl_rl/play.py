@@ -59,7 +59,7 @@ import time
 import torch
 
 from rsl_rl.runners import DistillationRunner, OnPolicyRunner
-from modules.runners import ModifiedOnPolicyRunner, AmpOnPolicyRunner
+from modules.runners import ModifiedOnPolicyRunner
 
 from isaaclab.envs import (
     DirectMARLEnv,
@@ -147,8 +147,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
     elif agent_cfg.class_name == "ModifiedOnPolicyRunner":
         runner = ModifiedOnPolicyRunner(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
-    elif agent_cfg.class_name == "AmpOnPolicyRunner":
-        runner = AmpOnPolicyRunner(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
     elif agent_cfg.class_name == "DistillationRunner":
         runner = DistillationRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
     else:

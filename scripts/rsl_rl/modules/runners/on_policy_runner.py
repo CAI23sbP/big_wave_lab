@@ -4,6 +4,7 @@ from __future__ import annotations
 import warnings
 
 from rsl_rl.modules import ActorCritic, ActorCriticRecurrent, resolve_symmetry_config
+from modules.actor_critics import ActorCriticVision
 
 from rsl_rl.runners import OnPolicyRunner
 from modules.algorithms.ppo import ModifiedPPO
@@ -26,7 +27,7 @@ class ModifiedOnPolicyRunner(OnPolicyRunner):
 
         # initialize the actor-critic
         actor_critic_class = eval(self.policy_cfg.pop("class_name"))
-        actor_critic: ActorCritic | ActorCriticRecurrent = actor_critic_class(
+        actor_critic: ActorCritic | ActorCriticRecurrent | ActorCriticVision = actor_critic_class(
             obs, self.cfg["obs_groups"], self.env.num_actions, **self.policy_cfg
         ).to(self.device)
 

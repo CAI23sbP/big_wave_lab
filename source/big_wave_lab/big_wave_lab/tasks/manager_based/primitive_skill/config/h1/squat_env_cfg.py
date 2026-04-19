@@ -82,8 +82,8 @@ class SquatCommandsCfg(CommandsCfg):
             resampling_time_range=(0, 10.),
             total_num_points=1000000,
             num_way_points=10,
-            base_height_target=1.0,
             debug_vis=True,
+            base_height_target=1.0,
             ranges=mdp.BaseHeightCommandCfg.Ranges(
                 base_height_std=0.2, base_height_scale=(0.2, 1.05)
             ),

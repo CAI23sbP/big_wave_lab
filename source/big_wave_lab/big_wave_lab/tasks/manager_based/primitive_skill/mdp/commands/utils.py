@@ -19,31 +19,49 @@ def build_leg_joint_map(joint_names: list[str]) -> dict[str, int | None]:
             r".*left.*hip.*pitch.*",
             r".*left_hip_pitch.*",
             r".*L.*hip.*pitch.*",
+            r"hip_pitch_l.*",
         ],
         "right_hip_pitch": [
             r".*right.*hip.*pitch.*",
             r".*right_hip_pitch.*",
             r".*R.*hip.*pitch.*",
+            r"hip_pitch_r.*",
         ],
         "left_knee": [
             r".*left.*knee.*",
             r".*left_knee.*",
             r".*L.*knee.*",
+            r"knee.*l.*",
         ],
         "right_knee": [
             r".*right.*knee.*",
             r".*right_knee.*",
             r".*R.*knee.*",
+            r"knee.*r.*",
         ],
         "left_ankle_pitch": [
             r".*left.*ankle.*pitch.*",
             r".*left_ankle_pitch.*",
             r".*L.*ankle.*pitch.*",
+            r"ankle_pitch_l.*",
         ],
         "right_ankle_pitch": [
             r".*right.*ankle.*pitch.*",
             r".*right_ankle_pitch.*",
             r".*R.*ankle.*pitch.*",
+            r"ankle_pitch_r.*",
+        ],
+        "left_ankle_roll": [
+            r".*left.*ankle.*roll.*",
+            r".*left_ankle_roll.*",
+            r".*L.*ankle.*roll.*",
+            r"ankle_roll_l.*",
+        ],
+        "right_ankle_roll": [
+            r".*right.*ankle.*pitch.*",
+            r".*right_ankle_pitch.*",
+            r".*R.*ankle.*pitch.*",
+            r"ankle_roll_r.*",
         ],
         
     }
