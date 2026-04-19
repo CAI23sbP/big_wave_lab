@@ -45,6 +45,7 @@ def build_leg_joint_map(joint_names: list[str]) -> dict[str, int | None]:
             r".*right_ankle_pitch.*",
             r".*R.*ankle.*pitch.*",
         ],
+        
     }
 
     joint_map = {}

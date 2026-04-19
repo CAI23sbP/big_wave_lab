@@ -215,10 +215,10 @@ class WalkCommandsCfg(CommandsCfg):
         
 @configclass
 class WalkCurriculumCfg(CurriculumCfg):
-    terrain_levels = CurrTerm(func=mdp.terrain_levels_vel,
-                              params={
-                                "command_name": "pose_command", 
-                                })
+    # terrain_levels = CurrTerm(func=mdp.terrain_levels_vel,
+    #                           params={
+    #                             "command_name": "pose_command", 
+    #                             })
     command_levels = CurrTerm(func=mdp.vel_command_level, 
                               params={
                                 "command_name": "pose_command", 
@@ -239,9 +239,9 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
         robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         ## scene set
         self.scene.robot = robot 
-        self.scene.terrain.terrain_type = "generator"
-        self.scene.terrain.terrain_generator = mdp.ROUGH_TERRAINS_CFG
-        self.scene.terrain.max_init_terrain_level = 10
+        # self.scene.terrain.terrain_type = "generator"
+        # self.scene.terrain.terrain_generator = mdp.ROUGH_TERRAINS_CFG
+        # self.scene.terrain.max_init_terrain_level = 10
         
         ## reward set: for matching the commands' parameter 
         self.rewards.tracking_lin_vel.params["tracking_sigma"] = self.commands.pose_command.tracking_sigma

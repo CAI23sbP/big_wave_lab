@@ -22,9 +22,8 @@ def track_lin_vel_xy(
     ) -> torch.Tensor:
     asset: Articulation = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)[:, 2:]
-    lin_vel_diff = command[:, :2] - asset.data.root_link_lin_vel_b[:, :2]
-    lin_vel_error = torch.sum(torch.square(
-        lin_vel_diff), dim=1)
+    lin_vel_diff = command[:, :2] - asset.data.root_lin_vel_b[:, :2]
+    lin_vel_error = torch.sum(torch.square(lin_vel_diff), dim=1)
     return torch.exp(-lin_vel_error * tracking_sigma)
 
 def track_ang_vel_z(    
@@ -35,9 +34,8 @@ def track_ang_vel_z(
     ) -> torch.Tensor:
     asset: Articulation = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)[:, 2:]
-    ang_vel_diff = command[:, 2] - asset.data.root_link_ang_vel_b[:, 2]
-    ang_vel_error = torch.square(
-        ang_vel_diff)
+    ang_vel_diff = command[:, 2] - asset.data.root_ang_vel_b[:, 2]
+    ang_vel_error = torch.square(ang_vel_diff)
     return torch.exp(-ang_vel_error * tracking_sigma)
 
 def base_height_tracking(
@@ -314,8 +312,8 @@ def vel_mismatch_exp(
     Encourages the robot to maintain a stable velocity by penalizing large deviations.
     """
     asset: Articulation = env.scene[asset_cfg.name]
-    base_lin_vel = asset.data.root_link_lin_vel_b
-    base_ang_vel = asset.data.root_link_ang_vel_b
+    base_lin_vel = asset.data.root_lin_vel_b
+    base_ang_vel = asset.data.root_ang_vel_b
 
     lin_mismatch = torch.exp(-torch.square(base_lin_vel[:, 2]) * 10)
     ang_mismatch = torch.exp(-torch.norm(base_ang_vel[:, :2], dim=1) * 5.)
@@ -337,7 +335,7 @@ def low_speed(
     """
     asset: Articulation = env.scene[asset_cfg.name]
     commands = env.command_manager.get_command(command_name)[:, 2:]
-    base_lin_vel = asset.data.root_link_lin_vel_b
+    base_lin_vel = asset.data.root_lin_vel_b
     # Calculate the absolute value of speed and command for comparison
     absolute_speed = torch.abs(base_lin_vel[:, 0])
     absolute_command = torch.abs(commands[:, 0])
@@ -373,8 +371,8 @@ def track_vel_hard(
 ):
     asset: Articulation = env.scene[asset_cfg.name]
     commands = env.command_manager.get_command(command_name)[:, 2:]
-    base_lin_vel = asset.data.root_link_lin_vel_b
-    base_ang_vel = asset.data.root_link_ang_vel_b
+    base_lin_vel = asset.data.root_lin_vel_b
+    base_ang_vel = asset.data.root_ang_vel_b
 
     lin_vel_error = torch.norm(
         commands[:, :2] - base_lin_vel[:, :2], dim=1)
