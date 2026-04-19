@@ -65,6 +65,30 @@ def body_pose_tracking(
     body_pose_error = torch.mean(torch.abs(body_pose_diff), dim=1)
     return torch.exp(-4 * body_pose_error)
 
+
+def head_tracking(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    forward_axis: tuple[float, float, float] = (1.0, 0.0, 0.0),
+    ) -> torch.Tensor:
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    target_pos_w = env.command_manager.get_term(command_name).ref_head_joint_pos[:, :3]
+
+    head_pos_w = asset.data.body_state_w[:, asset_cfg.body_ids, :3]
+    head_quat_w = asset.data.body_state_w[:, asset_cfg.body_ids, 3:7]
+
+    target_dir_w = target_pos_w - head_pos_w
+    target_dir_w = target_dir_w / torch.norm(target_dir_w, dim=-1, keepdim=True).clamp(min=1e-6)
+
+    local_forward = torch.tensor(forward_axis, device=env.device).unsqueeze(0).repeat(env.num_envs, 1)
+    head_forward_w = math_utils.quat_apply(head_quat_w, local_forward)
+    head_forward_w = head_forward_w / torch.norm(head_forward_w, dim=-1, keepdim=True).clamp(min=1e-6)
+
+    cos_sim = torch.sum(head_forward_w * target_dir_w, dim=-1)
+    return torch.clamp((cos_sim + 1.0) * 0.5, 0.0, 1.0).squeeze(1)
+
 def feet_distance(
     env: ManagerBasedRLEnv,
     max_distance: float,

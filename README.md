@@ -17,7 +17,7 @@ python3 scripts/rsl_rl/train.py --task Isaac-Squat-Flat-Unitree-H1-v0  --headles
 python3 scripts/rsl_rl/train.py --task Isaac-Squat-Flat-Pro-v0  --headless
 ```
 
-### 2. Reaching (H1-2, Tienkung Pro)
+### 2.2. Reaching (H1-2, Tienkung Pro)
 ```bash
 python3 scripts/rsl_rl/train.py --task Isaac-Reach-Flat-Unitree-H1-v0  --headless
 ```
@@ -25,7 +25,7 @@ python3 scripts/rsl_rl/train.py --task Isaac-Reach-Flat-Unitree-H1-v0  --headles
 python3 scripts/rsl_rl/train.py --task Isaac-Reach-Flat-Pro-v0  --headless
 ```
 
-### 3. Walking (H1-2, Tienkung Pro)
+### 2.3. Walking (H1-2, Tienkung Pro)
 ```bash
 python3 scripts/rsl_rl/train.py --task Isaac-Walk-Rough-Unitree-H1-v0  --headless
 ```

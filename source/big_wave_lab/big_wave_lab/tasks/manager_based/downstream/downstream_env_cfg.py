@@ -97,16 +97,20 @@ class RewardsCfg:
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
-    downstream_joint_pos = mdp.PreTrainedSkillPolicyActionCfg(
+    downstream_joint_pos = mdp.PartWiseSkillBlenderCfg(
         asset_name="robot", 
-        policy_paths=None, 
-        low_level_decimation=1, 
+        upper_body_policy_paths=None, 
+        lower_body_policy_paths=None, 
+        upper_joint_names = None,
+        lower_joint_names = None,
+        low_level_decimation=4, 
         high_level_command_name = "downstream_command",
         low_level_actions = LOW_LEVEL_ENV_CFG.actions.joint_pos,
         common_low_level_observations = LOW_LEVEL_ENV_CFG.observations.policy,
         low_level_command_observations = None,
         low_level_command_term_names = None,
-        low_level_command_size = None
+        upper_body_command_size = None,
+        lower_body_command_size = None
     )
 
 ##

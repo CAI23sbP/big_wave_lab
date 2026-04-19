@@ -184,7 +184,7 @@ class WalkRewardCfg(RewardsCfg):
         weight=-1., 
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[
             "pelvis", 
-            "body_yaw_joint", 
+            "body_yaw_.*", 
             "shoulder_.*",  
             "elbow_.*",
             "knee_.*",
@@ -198,7 +198,7 @@ class WalkRewardCfg(RewardsCfg):
         self.feet_distance.params["asset_cfg"].body_names = ["ankle_roll_.*"]
         self.feet_distance.weight = 0.2 
         
-        self.upper_body_pos.params["asset_cfg"].joint_names = ["body_yaw_joint", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"]
+        self.upper_body_pos.params["asset_cfg"].joint_names = ["body_yaw_.*", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"]
         self.upper_body_pos.weight = 0.5
 
 @configclass
@@ -233,7 +233,7 @@ class WalkCurriculumCfg(CurriculumCfg):
                               )
 
 @configclass
-class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
+class ProWalkRoughEnvCfg(PosingFlatEnvCfg):
     commands: WalkCommandsCfg = WalkCommandsCfg()
     observations: WalkObservationsCfg = WalkObservationsCfg()
     rewards: WalkRewardCfg = WalkRewardCfg()
@@ -255,7 +255,7 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
         
         ## event set
         self.events.add_base_mass.params["asset_cfg"].body_names = ["pelvis"]
-        self.events.base_external_force_torque.params["asset_cfg"].body_names = [".*torso_link"]
+        self.events.base_external_force_torque.params["asset_cfg"].body_names = ["body_yaw_.*"]
         
         ## termination set
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
@@ -264,7 +264,7 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
 
 
 @configclass
-class H1WalkRoughEnvCfg_PLAY(H1WalkRoughEnvCfg):
+class ProWalkRoughEnvCfg_PLAY(ProWalkRoughEnvCfg):
     viewer = ViewerCfg(
             eye=(-0., 2.6, 1.6),
             asset_name = "robot",

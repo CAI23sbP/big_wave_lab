@@ -70,12 +70,37 @@ gym.register(
 )
 
 gym.register(
-    id="Isaac-Walk-Rough-Unitree-Pro-v0",
+    id="Isaac-Walk-Rough-Pro-Play-v0",
     entry_point="big_wave_lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     order_enforce = False,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.walk_env_cfg:ProWalkRoughEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.walk_ppo_cfg:ProWalkRoughPPORunnerCfg",
+    },
+)
+
+
+
+## Head task
+gym.register(
+    id="Isaac-Head-Flat-Pro-v0",
+    entry_point="big_wave_lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    order_enforce = False,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.head_env_cfg:ProHeadFlatEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.head_ppo_cfg:ProHeadFlatPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Head-Flat-Pro-Play-v0",
+    entry_point="big_wave_lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    order_enforce = False,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.head_env_cfg:ProHeadFlatEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.head_ppo_cfg:ProHeadFlatPPORunnerCfg",
     },
 )

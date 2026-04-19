@@ -10,6 +10,7 @@ from isaaclab.markers.visualization_markers import VisualizationMarkersCfg
 from .base_height_command import BaseHeightCommand
 from .arm_target_command import ArmTargetCommand
 from .gait_command import GaitCommand
+from .head_angle_command import HeadLookTargetCommand
 
 @configclass
 class PrimitiveSkillCommandCfg(CommandTermCfg):
@@ -183,3 +184,48 @@ class GaitCommandCfg(CommandTermCfg):
     # Set the scale of the visualization markers to (0.5, 0.5, 0.5)
     goal_vel_visualizer_cfg.markers["arrow"].scale = (0.5, 0.5, 0.5)
     current_vel_visualizer_cfg.markers["arrow"].scale = (0.5, 0.5, 0.5)
+
+
+
+@configclass
+class HeadLookTargetCommandCfg(CommandTermCfg):
+    """Configuration for the uniform velocity command generator."""
+
+    class_type = HeadLookTargetCommand
+    asset_name: str = MISSING
+
+    head_body_name: str = "camera_head_link"
+    head_joint_names: list[str] = ["head_pitch", "head_yaw"]
+    command_size: int = 2 # except roll
+    
+    @configclass    
+    class Ranges:
+        distance = (0.4, 1.2)
+        yaw = (-1.0, 1.0)      # rad
+        pitch = (-0.5, 0.5)    # rad
+
+    ranges: Ranges = Ranges()
+    resampling_time_range = (1.0, 3.0)
+
+    # debug vis
+    target_head_visualizer_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
+        prim_path="/Visuals/Commands/head_target",
+        markers={
+            "sphere": sim_utils.SphereCfg(
+                radius=0.05,
+                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0),opacity = 0.3),
+            ),
+        }
+    )
+    current_head_visualizer_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
+        prim_path="/Visuals/Commands/head_current",
+        markers={
+            "sphere": sim_utils.SphereCfg(
+                radius=0.05,
+                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0),opacity = 0.3),
+            ),
+        }
+    )
+    
+    target_head_visualizer_cfg.markers["sphere"].scale = (0.5, 0.5, 0.5)
+    current_head_visualizer_cfg.markers["sphere"].scale = (0.5, 0.5, 0.5)
