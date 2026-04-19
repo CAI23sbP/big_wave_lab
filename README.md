@@ -33,6 +33,11 @@ python3 scripts/rsl_rl/train.py --task Isaac-Walk-Rough-Unitree-H1-v0  --headles
 python3 scripts/rsl_rl/train.py --task Isaac-Walk-Rough-Pro-v0  --headless
 ```
 
+### 2.4. Heading (Tienkung Pro Only)
+```bash
+python3 scripts/rsl_rl/train.py --task Isaac-Head-Flat-Pro-v0  --headless
+```
+
 ## 3. Play primitive-skills
 
 ### 3.1. Squatting (H1-2, Tienkung Pro)
@@ -51,13 +56,17 @@ python3 scripts/rsl_rl/play.py  --task Isaac-Reach-Flat-Unitree-H1-Play-v0
 python3 scripts/rsl_rl/play.py  --task Isaac-Reach-Flat-Pro-Play-v0
 ```
 
-
 ### 3.3. Walking (H1-2, Tienkung Pro)
 ```bash
 python3 scripts/rsl_rl/play.py  --task Isaac-Walk-Rough-Unitree-H1-Play-v0
 ```
 ```bash
 python3 scripts/rsl_rl/play.py  --task Isaac-Walk-Rough-Pro-Play-v0
+```
+
+### 3.4. Heading (Tienkung Pro Only)
+```bash
+python3 scripts/rsl_rl/play.py  --task Isaac-Head-Flat-Pro-Play-v0
 ```
 
 ## 4. Train downstram task (TODO list)
