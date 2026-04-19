@@ -28,7 +28,7 @@ class SkillSelectCommand(CommandTerm):
         
         self.select_command = F.one_hot(torch.zeros(self.num_envs, device=self.device).long(), \
                             num_classes=self._num_skills).float()
-        self.metrics["error_target_pos"] = torch.zeros(self.num_envs, device=self.device)
+        # self.metrics["error_target_pos"] = torch.zeros(self.num_envs, device=self.device)
         self.env = env
 
     def __str__(self) -> str:
@@ -46,7 +46,7 @@ class SkillSelectCommand(CommandTerm):
     def _update_metrics(self):
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
-        self.metrics["error_target_pos"] = torch.norm((self.robot.data.joint_pos - self._env.action_manager.get_term(self.cfg.action_name).target_primitive_action), dim=-1) / max_command_step
+        # self.metrics["error_target_pos"] = torch.norm((self.robot.data.joint_pos - self._env.action_manager.get_term(self.cfg.action_name).target_primitive_action), dim=-1) / max_command_step
         
     def _resample_command(self, env_ids: Sequence[int]):
         # sample select idx

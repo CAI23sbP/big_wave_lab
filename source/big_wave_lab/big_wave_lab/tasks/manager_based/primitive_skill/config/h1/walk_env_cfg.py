@@ -229,7 +229,7 @@ class WalkCurriculumCfg(CurriculumCfg):
     command_levels = CurrTerm(func=mdp.vel_command_level, 
                               params={
                                 "command_name": "pose_command", 
-                                "threshold": 1.2 * 2
+                                "threshold": 0.7
                                 }
                               )
 

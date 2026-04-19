@@ -28,11 +28,10 @@ def vel_command_level(
     curriculum_score = torch.mean(command.curriculum[env_ids])
 
     if curriculum_score > threshold:
+        base_min, base_max = getattr(command, "_base_lin_vel_x_range", command.cfg.ranges.lin_vel_x)
         command.cfg.ranges.lin_vel_x = (
-            float(torch.clamp(torch.tensor(command.cfg.ranges.lin_vel_x[0], device=env.device) - 0.5,
-                              min=-command.cfg.max_curriculum, max=0.0).item()),
-            float(torch.clamp(torch.tensor(command.cfg.ranges.lin_vel_x[1], device=env.device) + 0.5,
-                              min=0.0, max=command.cfg.max_curriculum).item()),
+            max(command.cfg.ranges.lin_vel_x[0] - 0.5, base_min - command.cfg.max_curriculum),
+            min(command.cfg.ranges.lin_vel_x[1] + 0.5, base_max + command.cfg.max_curriculum),
         )
 
     return curriculum_score

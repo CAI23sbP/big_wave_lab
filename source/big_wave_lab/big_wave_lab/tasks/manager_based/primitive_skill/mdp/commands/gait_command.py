@@ -45,7 +45,8 @@ class GaitCommand(CommandTerm):
         self.metrics["error_vel_yaw"] = torch.zeros(env.num_envs).to(env.device)
         self.vel_command_b = torch.zeros(env.num_envs, 2+3).to(env.device)
         self.heading_target = torch.zeros(self.num_envs, device=self.device)
-        self._ref_dof_pos = torch.zeros_like(self.robot.data.default_joint_pos)
+        self._ref_dof_pos = self.robot.data.default_joint_pos.clone()
+        self._base_lin_vel_x_range = tuple(cfg.ranges.lin_vel_x)
         
     def __str__(self) -> str:
         """Return a string representation of the command generator."""
@@ -103,14 +104,14 @@ class GaitCommand(CommandTerm):
 
         jm = self._leg_joint_map
         # left leg
-        self._ref_dof_pos[:, jm["left_hip_pitch"]] = sin_pos_l * scale_1 # left_hip_pitch_joint   
-        self._ref_dof_pos[:, jm["left_knee"]] = sin_pos_l * scale_2     # left_knee_joint
-        self._ref_dof_pos[:, jm["left_ankle_pitch"]] = sin_pos_l * scale_1 # left_ankle_joint
-        sin_pos_r[sin_pos_r < 0] = 0
-        self._ref_dof_pos[:, jm["right_hip_pitch"]] = sin_pos_r * scale_1 # right_hip_pitch_joint
-        self._ref_dof_pos[:, jm["right_knee"]] = sin_pos_r * scale_2 # right_knee_joint
-        self._ref_dof_pos[:, jm["right_ankle_pitch"]] = sin_pos_r * scale_1 # right_ankle_joint
-        self._ref_dof_pos[torch.abs(self._sin_pos) < 0.1] = 0
+        self._ref_dof_pos[:, jm["left_hip_pitch"]] += sin_pos_l * scale_1 # left_hip_pitch_joint   
+        self._ref_dof_pos[:, jm["left_knee"]] += sin_pos_l * scale_2     # left_knee_joint
+        self._ref_dof_pos[:, jm["left_ankle_pitch"]] += sin_pos_l * scale_1 # left_ankle_joint
+        sin_pos_r[sin_pos_r < 0] = 0.0
+        self._ref_dof_pos[:, jm["right_hip_pitch"]] += sin_pos_r * scale_1 # right_hip_pitch_joint
+        self._ref_dof_pos[:, jm["right_knee"]] += sin_pos_r * scale_2 # right_knee_joint
+        self._ref_dof_pos[:, jm["right_ankle_pitch"]] += sin_pos_r * scale_1 # right_ankle_joint
+        self._ref_dof_pos[torch.abs(self._sin_pos) < 0.1] = 0.0
         
     def _resample_command(self, env_ids: Sequence[int]):
         self._curriculum[env_ids] = 0.0

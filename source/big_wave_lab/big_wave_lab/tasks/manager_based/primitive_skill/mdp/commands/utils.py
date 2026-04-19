@@ -58,9 +58,9 @@ def build_leg_joint_map(joint_names: list[str]) -> dict[str, int | None]:
             r"ankle_roll_l.*",
         ],
         "right_ankle_roll": [
-            r".*right.*ankle.*pitch.*",
-            r".*right_ankle_pitch.*",
-            r".*R.*ankle.*pitch.*",
+            r".*right.*ankle.*roll.*",
+            r".*right_ankle_roll.*",
+            r".*R.*ankle.*roll.*",
             r"ankle_roll_r.*",
         ],
         

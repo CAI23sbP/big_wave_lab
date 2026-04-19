@@ -148,10 +148,6 @@ class PreTrainedSkillPolicyAction(ActionTerm):
         return alpha, cmd_dict
 
     def _compute_target_skill_stable(self, selected_idx: torch.Tensor) -> torch.Tensor:
-        """임시 안정 판정.
-        지금은 최소 전이 step만 보고 True/False를 만들고,
-        나중에 skill별 상태 조건으로 교체하는 것이 좋음.
-        """
         stable = self.transition_steps >= self.cfg.min_transition_steps
         return stable
 

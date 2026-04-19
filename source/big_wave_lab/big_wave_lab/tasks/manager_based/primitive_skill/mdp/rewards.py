@@ -4,11 +4,11 @@ from __future__ import annotations
 import torch
 from typing import TYPE_CHECKING
 
-from isaaclab.assets import Articulation, RigidObject
+from isaaclab.assets import Articulation
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers.manager_base import ManagerTermBase
 from isaaclab.managers.manager_term_cfg import RewardTermCfg
-from isaaclab.sensors import ContactSensor, RayCaster
+from isaaclab.sensors import ContactSensor
 import isaaclab.utils.math as math_utils
 
 if TYPE_CHECKING:
@@ -169,7 +169,7 @@ class feet_clearance(ManagerTermBase):
         asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     ) -> torch.Tensor:
         asset: Articulation = env.scene[asset_cfg.name]
-        contact = self.contact_sensor.data.net_forces_w_history[:, -1, sensor_cfg.body_ids, 2] > 5.0
+        contact = self.contact_sensor.data.net_forces_w_history[:, -1, sensor_cfg.body_ids, 2] > 1.0
 
         feet_z = asset.data.body_state_w[:, asset_cfg.body_ids, 2] - 0.05
         delta_z = feet_z - self._last_feet_z
@@ -266,7 +266,7 @@ def foot_slip(
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
     net_contact_forces = contact_sensor.data.net_forces_w_history
 
-    contact = net_contact_forces[:, -1, sensor_cfg.body_ids, 2] > 5.
+    contact = net_contact_forces[:, -1, sensor_cfg.body_ids, 2] > 1.
     foot_speed_norm = torch.norm(asset.data.body_com_vel_w[:, asset_cfg.body_ids, :2], dim=2)
     rew = torch.sqrt(foot_speed_norm)
     rew *= contact
@@ -283,7 +283,7 @@ def knee_distance(
     knee_pos = asset.data.body_com_pos_w[:, asset_cfg.body_ids, :2]
     knee_dist = torch.norm(knee_pos[:, 0, :] - knee_pos[:, 1, :], dim=1)
     fd = min_dist
-    max_df = max_dist / 2
+    max_df = max_dist
     d_min = torch.clamp(knee_dist - fd, -0.5, 0.)
     d_max = torch.clamp(knee_dist - max_df, 0, 0.5)
     return (torch.exp(-torch.abs(d_min) * 100) + torch.exp(-torch.abs(d_max) * 100)) / 2
@@ -336,32 +336,27 @@ def low_speed(
     asset: Articulation = env.scene[asset_cfg.name]
     commands = env.command_manager.get_command(command_name)[:, 2:]
     base_lin_vel = asset.data.root_lin_vel_b
-    # Calculate the absolute value of speed and command for comparison
-    absolute_speed = torch.abs(base_lin_vel[:, 0])
-    absolute_command = torch.abs(commands[:, 0])
+    command_speed = torch.norm(commands[:, :2], dim=1)
+    base_speed = torch.norm(base_lin_vel[:, :2], dim=1)
+    active_command = command_speed > 0.1
 
     # Define speed criteria for desired range
-    speed_too_low = absolute_speed < 0.5 * absolute_command
-    speed_too_high = absolute_speed > 1.2 * absolute_command
+    speed_too_low = base_speed < 0.5 * command_speed
+    speed_too_high = base_speed > 1.2 * command_speed
     speed_desired = ~(speed_too_low | speed_too_high)
 
-    # Check if the speed and command directions are mismatched
-    sign_mismatch = torch.sign(
-        base_lin_vel[:, 0]) != torch.sign(commands[:, 0])
+    # Penalize moving against the commanded planar direction.
+    direction_mismatch = torch.sum(base_lin_vel[:, :2] * commands[:, :2], dim=1) < 0.0
 
     # Initialize reward tensor
-    reward = torch.zeros_like(base_lin_vel[:, 0])
+    reward = torch.zeros_like(base_speed)
 
     # Assign rewards based on conditions
-    # Speed too low
     reward[speed_too_low] = -1.0
-    # Speed too high
     reward[speed_too_high] = 0.
-    # Speed within desired range
     reward[speed_desired] = 1.2
-    # Sign mismatch has the highest priority
-    reward[sign_mismatch] = -2.0
-    return reward * (commands[:, 0].abs() > 0.1)
+    reward[direction_mismatch & active_command] = -2.0
+    return reward * active_command
 
 
 def track_vel_hard(

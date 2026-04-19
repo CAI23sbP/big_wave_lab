@@ -53,7 +53,6 @@ class DownstreamObservationsCfg:
     @configclass
     class DownstreamCriticCfg(LOW_LEVEL_ENV_CFG.observations.CriticCfg):
         
-        
         def __post_init__(self):
             super().__post_init__()
             self.pose_command.params["command_name"] = "downstream_command"
@@ -61,7 +60,6 @@ class DownstreamObservationsCfg:
     # observation groups
     policy: DownstreamPolicyCfg = DownstreamPolicyCfg()
     critic: DownstreamCriticCfg = DownstreamCriticCfg()
-
 
 @configclass
 class RewardsCfg:

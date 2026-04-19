@@ -36,3 +36,13 @@ class PreTrainedSkillPolicyActionCfg(ActionTermCfg):
 @configclass
 class SkillBlenderActionCfg(ActionTermCfg):
     class_type: type[ActionTerm] = SkillBlenderAction
+    asset_name: str = MISSING
+    policy_paths: dict[str, str] = MISSING
+    low_level_actions: ActionTermCfg = MISSING
+    common_low_level_observations: ObservationGroupCfg = MISSING
+    low_level_command_term_names: dict[str, str] = MISSING
+    low_level_command_observations: dict[str, ObservationGroupCfg] = MISSING
+    low_level_command_size: dict[str, int] = MISSING
+    
+    debug_vis: bool = False
+    low_level_decimation: int = 1
