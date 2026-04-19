@@ -11,10 +11,6 @@ from isaaclab.envs import ViewerCfg
 import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
 from big_wave_lab.assets.robot_cfg import TIENKUNG_PRO_TRAINING_CFG as PRO_CFG
 
-"""
-Tienkung pro has head joints roll,pitch,yaw
-"""
-
 @configclass
 class HeadObservationsCfg(ObservationsCfg):
     
@@ -84,8 +80,6 @@ class HeadRewardCfg(RewardsCfg):
         self.default_joint_pos.params["right_cfg"].joint_names = ["hip_yaw_r_joint", "hip_roll_r_joint"]
         self.upper_body_pos.params["asset_cfg"].joint_names = ["body_yaw_.*", "elbow_.*", "shoulder_.*", "wrist_.*"]
         self.feet_distance.params["asset_cfg"].body_names = ["ankle_roll_.*"]
-        
-        
         
 @configclass
 class HeadCommandsCfg(CommandsCfg):
