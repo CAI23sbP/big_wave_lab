@@ -77,10 +77,10 @@ class ArmTargetCommand(CommandTerm):
             torch.norm(self.ref_wrist_pos[:, 1, :3] - self.robot.data.body_state_w[:, self.wrist_indices[1], :3], dim=-1) / max_command_step
         )
         self.metrics["error_right_arm_orientation"] += (
-            torch.norm(self.ref_wrist_pos[:, 0, 3:] - self.robot.data.body_state_w[:, self.wrist_indices[0], 3:], dim=-1) / max_command_step
+            torch.norm(self.ref_wrist_pos[:, 0, 3:] - self.robot.data.body_state_w[:, self.wrist_indices[0], 3:7], dim=-1) / max_command_step
         )
         self.metrics["error_left_arm_orientation"] += (
-            torch.norm(self.ref_wrist_pos[:, 1, 3:] - self.robot.data.body_state_w[:, self.wrist_indices[1], 3:], dim=-1) / max_command_step
+            torch.norm(self.ref_wrist_pos[:, 1, 3:] - self.robot.data.body_state_w[:, self.wrist_indices[1], 3:7], dim=-1) / max_command_step
         )
 
     def compute(self, dt: float):

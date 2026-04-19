@@ -63,7 +63,7 @@ class WalkObservationsCfg(ObservationsCfg):
             self.pose_command.func = mdp.rescale_generated_commands
             self.pose_command.params["scale"] = (2., 2. ,1.)    
             self.base_mass.params["asset_cfg"].body_names = ["pelvis"]
-            self.feet_contact_mask.params["sensor_cfg"].body_names = [".*_ankle_roll_.*"]
+            self.feet_contact_mask.params["sensor_cfg"].body_names = ["ankle_roll_.*"]
 
 
     policy: WalkPolicyCfg = WalkPolicyCfg()
@@ -83,8 +83,8 @@ class WalkRewardCfg(RewardsCfg):
             "command_name": "pose_command",
             "target_feet_height": 0.06,
             "last_feet_z": 0.05,
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_ankle_roll_.*"),
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*_ankle_roll_.*")
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names="ankle_roll_.*"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="ankle_roll_.*")
             }
     )
     feet_contact_number = RewTerm(
@@ -92,7 +92,7 @@ class WalkRewardCfg(RewardsCfg):
         weight=2.4, 
         params={
             "command_name": "pose_command",
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_ankle_roll_.*")
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names="ankle_roll_.*")
             }
     )
     feet_air_time = RewTerm(
@@ -100,15 +100,15 @@ class WalkRewardCfg(RewardsCfg):
         weight=1.0, 
         params={
             "command_name": "pose_command",
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_ankle_roll_.*")
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names="ankle_roll_.*")
             }
     )
     foot_slip = RewTerm(
         func=mdp.foot_slip, 
         weight=-0.05, 
         params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_ankle_roll_.*"),
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*_ankle_roll_.*")
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names="ankle_roll_.*"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="ankle_roll_.*")
             }
     )
     knee_distance = RewTerm(
@@ -117,7 +117,7 @@ class WalkRewardCfg(RewardsCfg):
         params={
             "min_dist": 0.2,
             "max_dist": 0.5,
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*_knee_.*")
+            "asset_cfg": SceneEntityCfg("robot", body_names="knee_.*")
             }
     )
     feet_contact_forces = RewTerm(
@@ -125,7 +125,7 @@ class WalkRewardCfg(RewardsCfg):
         weight=-0.01, 
         params={
             "max_contact_force": 700,
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_ankle_roll_.*"),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names="ankle_roll_.*"),
             }
     )
     tracking_lin_vel = RewTerm(
@@ -166,7 +166,7 @@ class WalkRewardCfg(RewardsCfg):
         params={
             "command_name": "pose_command",
             "base_height_target": 1.0,
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*_ankle_roll_.*")
+            "asset_cfg": SceneEntityCfg("robot", body_names="ankle_roll_.*")
             }
     )
     base_acc = RewTerm(
@@ -183,16 +183,16 @@ class WalkRewardCfg(RewardsCfg):
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts, 
         weight=-1., 
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["pelvis", ".*torso_link", ".*_shoulder_.*",  ".*_elbow_.*", ".*_wrist_.*"]), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["pelvis", "body_yaw_joint", "shoulder_.*",  "elbow_.*", "wrist_.*"]), "threshold": 1.0},
     )
     def __post_init__(self):
         super().__post_init__()
         self.default_joint_pos.params["left_cfg"].joint_names = ["left_hip_yaw_.*", "left_hip_roll_.*"]
         self.default_joint_pos.params["right_cfg"].joint_names = ["right_hip_yaw_.*", "right_hip_roll_.*"]
-        self.feet_distance.params["asset_cfg"].body_names = [".*_ankle_roll_.*"]
+        self.feet_distance.params["asset_cfg"].body_names = ["ankle_roll_.*"]
         self.feet_distance.weight = 0.2 
         
-        self.upper_body_pos.params["asset_cfg"].joint_names = ["torso_.*", ".*_shoulder_.*", ".*_elbow_.*", ".*_wrist_.*"]
+        self.upper_body_pos.params["asset_cfg"].joint_names = ["body_yaw_joint", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"]
         self.upper_body_pos.weight = 0.5
 
 @configclass
@@ -253,12 +253,9 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
         
         ## termination set
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
-            "pelvis", 
-            ".*torso_link", 
-            ".*_shoulder_.*", 
-            ".*_elbow_.*",
-            ".*_wrist_.*"
+            "pelvis", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"
         ]
+
 
 @configclass
 class H1WalkRoughEnvCfg_PLAY(H1WalkRoughEnvCfg):

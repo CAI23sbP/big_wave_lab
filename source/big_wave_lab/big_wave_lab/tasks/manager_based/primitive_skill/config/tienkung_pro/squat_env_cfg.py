@@ -62,8 +62,8 @@ class SquatRewardCfg(RewardsCfg):
     )
 
     def __post_init__(self):
-        self.default_joint_pos.params["left_cfg"].joint_names = ["hip_yaw_left_joint", "hip_roll_left_joint"]
-        self.default_joint_pos.params["right_cfg"].joint_names = ["hip_yaw_right_joint*", "hip_roll_right_joint"]
+        self.default_joint_pos.params["left_cfg"].joint_names = ["hip_yaw_l_joint", "hip_roll_l_joint"]
+        self.default_joint_pos.params["right_cfg"].joint_names = ["hip_yaw_r_joint*", "hip_roll_r_joint"]
         self.upper_body_pos.params["asset_cfg"].joint_names = ["body_yaw_joint", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"]
 
         self.feet_distance.params["asset_cfg"].body_names = ["ankle_roll_.*"]

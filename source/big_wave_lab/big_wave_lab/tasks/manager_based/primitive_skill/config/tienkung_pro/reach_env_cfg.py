@@ -55,8 +55,8 @@ class ReachObservationsCfg(ObservationsCfg):
         
         def __post_init__(self):
             super().__post_init__()
-            self.base_mass.params["asset_cfg"].body_names = [".*torso_link"]
-            self.feet_contact_mask.params["sensor_cfg"].body_names = [".*_ankle_roll_.*"]
+            self.base_mass.params["asset_cfg"].body_names = ["pelvis"]
+            self.feet_contact_mask.params["sensor_cfg"].body_names = ["ankle_roll_.*"]
 
 
     policy: ReachPolicyCfg = ReachPolicyCfg()
@@ -72,13 +72,12 @@ class ReachRewardCfg(RewardsCfg):
             "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*"]),
         }
     )
-    
     def __post_init__(self):
-        self.default_joint_pos.params["left_cfg"].joint_names = ["left_hip_yaw_.*", "left_hip_roll_.*"]
-        self.default_joint_pos.params["right_cfg"].joint_names = ["right_hip_yaw_.*", "right_hip_roll_.*"]
-        self.upper_body_pos.params["asset_cfg"].joint_names = ["torso_.*"]
+        self.default_joint_pos.params["left_cfg"].joint_names = ["hip_yaw_l_joint", "hip_roll_l_joint"]
+        self.default_joint_pos.params["right_cfg"].joint_names = ["hip_yaw_r_joint*", "hip_roll_r_joint"]
+        self.upper_body_pos.params["asset_cfg"].joint_names = ["body_yaw_joint", "head_.*"]
 
-        self.feet_distance.params["asset_cfg"].body_names = [".*_ankle_roll_.*"]
+        self.feet_distance.params["asset_cfg"].body_names = ["ankle_roll_.*"]
         
         
 @configclass
@@ -118,7 +117,7 @@ class ProReachFlatEnvCfg(PosingFlatEnvCfg):
         
         ## event set
         self.events.add_base_mass.params["asset_cfg"].body_names = ["pelvis"]
-        self.events.base_external_force_torque.params["asset_cfg"].body_names = [".*torso_link"]
+        self.events.base_external_force_torque.params["asset_cfg"].body_names = ["pelvis"]
         
         ## termination set
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
