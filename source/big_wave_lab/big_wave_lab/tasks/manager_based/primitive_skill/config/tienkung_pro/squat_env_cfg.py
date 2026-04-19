@@ -8,15 +8,10 @@ from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.envs import ViewerCfg
 
 import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
-
-##
-# Pre-defined configs
-##
-from big_wave_lab.assets.robot_cfg import H1_2_CFG
+from big_wave_lab.assets.robot_cfg import TIENKUNG_PRO_TRAINING_CFG as PRO_CFG
 
 @configclass
 class SquatObservationsCfg(ObservationsCfg):
-    
     @configclass
     class SquatPolicyCfg(ObservationsCfg.PolicyCfg):
         
@@ -52,11 +47,11 @@ class SquatObservationsCfg(ObservationsCfg):
         def __post_init__(self):
             super().__post_init__()
             self.base_mass.params["asset_cfg"].body_names = ["pelvis"]
-            self.feet_contact_mask.params["sensor_cfg"].body_names = [".*_ankle_roll_.*"]
-        
+            self.feet_contact_mask.params["sensor_cfg"].body_names = ["ankle_roll.*"]
 
     policy: SquatPolicyCfg = SquatPolicyCfg()
     critic: SquatCriticCfg = SquatCriticCfg()
+        
         
 @configclass
 class SquatRewardCfg(RewardsCfg):
@@ -67,12 +62,13 @@ class SquatRewardCfg(RewardsCfg):
     )
 
     def __post_init__(self):
-        self.default_joint_pos.params["left_cfg"].joint_names = ["left_hip_yaw_.*", "left_hip_roll_.*"]
-        self.default_joint_pos.params["right_cfg"].joint_names = ["right_hip_yaw_.*", "right_hip_roll_.*"]
-        self.upper_body_pos.params["asset_cfg"].joint_names = ["torso_.*", ".*_shoulder_.*", ".*_elbow_.*", ".*_wrist_.*"]
+        self.default_joint_pos.params["left_cfg"].joint_names = ["hip_yaw_left_joint", "hip_roll_left_joint"]
+        self.default_joint_pos.params["right_cfg"].joint_names = ["hip_yaw_right_joint*", "hip_roll_right_joint"]
+        self.upper_body_pos.params["asset_cfg"].joint_names = ["body_yaw_joint", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"]
 
-        self.feet_distance.params["asset_cfg"].body_names = [".*_ankle_roll_.*"]
+        self.feet_distance.params["asset_cfg"].body_names = ["ankle_roll_.*"]
         
+                
 @configclass
 class SquatCommandsCfg(CommandsCfg):
     """Command specifications for the MDP."""
@@ -82,15 +78,15 @@ class SquatCommandsCfg(CommandsCfg):
             resampling_time_range=(0, 10.),
             total_num_points=1000000,
             num_way_points=10,
-            base_height_target=1.0,
+            base_height_target=0.9,
             debug_vis=True,
             ranges=mdp.BaseHeightCommandCfg.Ranges(
-                base_height_std=0.2, base_height_scale=(0.2, 1.05)
+                base_height_std=0.2, base_height_scale=(0.3, 1.0)
             ),
         )
 
 @configclass
-class H1SquatFlatEnvCfg(PosingFlatEnvCfg):
+class ProSquatFlatEnvCfg(PosingFlatEnvCfg):
     commands: SquatCommandsCfg = SquatCommandsCfg()
     observations: SquatObservationsCfg = SquatObservationsCfg()
     rewards: SquatRewardCfg = SquatRewardCfg()
@@ -98,23 +94,20 @@ class H1SquatFlatEnvCfg(PosingFlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        robot = PRO_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         self.scene.robot = robot 
         
         ## event set
         self.events.add_base_mass.params["asset_cfg"].body_names = ["pelvis"]
-        self.events.base_external_force_torque.params["asset_cfg"].body_names = [".*torso_link"]
+        self.events.base_external_force_torque.params["asset_cfg"].body_names = ["pelvis"]
         
         ## termination set
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
-            "pelvis", 
-            ".*torso_link", 
-            ".*_shoulder_.*", 
-            ".*_elbow_.*",
+            "pelvis", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"
         ]
 
 @configclass
-class H1SquatFlatEnvCfg_PLAY(H1SquatFlatEnvCfg):
+class ProSquatFlatEnvCfg_PLAY(ProSquatFlatEnvCfg):
     viewer = ViewerCfg(
             eye=(-0., 2.6, 1.6),
             asset_name = "robot",
@@ -129,7 +122,6 @@ class H1SquatFlatEnvCfg_PLAY(H1SquatFlatEnvCfg):
         self.scene.env_spacing = 2.5
         self.episode_length_s = 40.0
         # disable randomization for play
-        # self.observations.policy.enable_corruption = 
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_force_robot = None

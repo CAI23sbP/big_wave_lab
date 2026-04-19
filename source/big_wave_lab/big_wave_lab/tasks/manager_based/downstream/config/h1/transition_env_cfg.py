@@ -142,4 +142,4 @@ class H1TransitionFlatEnvCfg_PLAY(H1TransitionFlatEnvCfg):
         self.observations.policy.enable_corruption = False
         # remove random pushing
         self.events.base_external_force_torque = None
-        self.events.push_robot = None
+        self.events.push_force_robot = None

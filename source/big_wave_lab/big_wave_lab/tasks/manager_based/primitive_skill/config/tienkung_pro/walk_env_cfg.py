@@ -14,7 +14,7 @@ import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
 ##
 # Pre-defined configs
 ##
-from big_wave_lab.assets.robot_cfg import H1_2_CFG
+from big_wave_lab.assets.robot_cfg import TIENKUNG_PRO_TRAINING_CFG as PRO_CFG
 
 
 @configclass
@@ -236,7 +236,7 @@ class H1WalkRoughEnvCfg(PosingFlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        robot = PRO_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         ## scene set
         self.scene.robot = robot 
         # self.scene.terrain.terrain_type = "generator"

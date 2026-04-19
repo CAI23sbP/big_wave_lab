@@ -1,16 +1,15 @@
 
 from isaaclab.utils import configclass
 
-from big_wave_lab.tasks.manager_based.primitive_skill.primitive_skill_env_cfg import PosingFlatEnvCfg, RewardsCfg, ObservationsCfg, CommandsCfg
+from  big_wave_lab.tasks.manager_based.primitive_skill.primitive_skill_env_cfg import PosingFlatEnvCfg, RewardsCfg, ObservationsCfg, CommandsCfg
+from isaaclab.managers import SceneEntityCfg
+
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.envs import ViewerCfg
-from isaaclab.managers import SceneEntityCfg
 
 import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
-
-##
-from big_wave_lab.assets.robot_cfg import H1_2_CFG
+from big_wave_lab.assets.robot_cfg import TIENKUNG_PRO_TRAINING_CFG as PRO_CFG
 
 @configclass
 class ReachObservationsCfg(ObservationsCfg):
@@ -22,7 +21,7 @@ class ReachObservationsCfg(ObservationsCfg):
             func=mdp.body_pos_w_diff,
             params={
                 "command_name": "pose_command",
-                "asset_cfg": SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*.*"]),
             },
             scale=1.,
             clip=(-18.0, 18.0),
@@ -39,7 +38,7 @@ class ReachObservationsCfg(ObservationsCfg):
             func=mdp.body_pos_w_diff,
             params={
                 "command_name": "pose_command",
-                "asset_cfg": SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*.*"]),
             },
             scale=1.,
             clip=(-18.0, 18.0),
@@ -48,7 +47,7 @@ class ReachObservationsCfg(ObservationsCfg):
         
         target_body_pos_w = ObsTerm(
             func=mdp.body_pos_w,
-            params={"asset_cfg":SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"])},
+            params={"asset_cfg":SceneEntityCfg("robot", body_names=["wrist_roll_.*"])},
             scale=1.,
             clip=(-18.0, 18.0),
             history_length = 3,
@@ -56,7 +55,7 @@ class ReachObservationsCfg(ObservationsCfg):
         
         def __post_init__(self):
             super().__post_init__()
-            self.base_mass.params["asset_cfg"].body_names = ["pelvis"]
+            self.base_mass.params["asset_cfg"].body_names = [".*torso_link"]
             self.feet_contact_mask.params["sensor_cfg"].body_names = [".*_ankle_roll_.*"]
 
 
@@ -70,7 +69,7 @@ class ReachRewardCfg(RewardsCfg):
         weight=5.0,
         params={
             "command_name": "pose_command",
-            "asset_cfg": SceneEntityCfg("robot", body_names=[".*_wrist_yaw_.*"]),
+            "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*"]),
         }
     )
     
@@ -92,7 +91,7 @@ class ReachCommandsCfg(CommandsCfg):
             total_num_points=2000000,
             num_way_points=10,
             debug_vis=True,
-            body_names = [".*_wrist_yaw_.*"],
+            body_names = ["wrist_roll_.*.*"],
             ranges=mdp.ArmTargetCommandCfg.Ranges(
                 wrist_max_radius = 0.25,
                 l_wrist_pos_x = (-0.10, 0.25),
@@ -105,7 +104,7 @@ class ReachCommandsCfg(CommandsCfg):
         )
         
 @configclass
-class H1ReachFlatEnvCfg(PosingFlatEnvCfg):
+class ProReachFlatEnvCfg(PosingFlatEnvCfg):
     commands: ReachCommandsCfg = ReachCommandsCfg()
     observations: ReachObservationsCfg = ReachObservationsCfg()
     rewards: ReachRewardCfg = ReachRewardCfg()
@@ -113,7 +112,7 @@ class H1ReachFlatEnvCfg(PosingFlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        robot = PRO_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         self.scene.robot = robot 
         ## observation set
         
@@ -123,14 +122,11 @@ class H1ReachFlatEnvCfg(PosingFlatEnvCfg):
         
         ## termination set
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
-            "pelvis", 
-            ".*torso_link", 
-            ".*_shoulder_.*", 
-            ".*_elbow_.*",
+            "pelvis", "elbow_.*", "shoulder_.*", "head_.*"
         ]
 
 @configclass
-class H1ReachFlatEnvCfg_PLAY(H1ReachFlatEnvCfg):
+class ProReachFlatEnvCfg_PLAY(ProReachFlatEnvCfg):
     viewer = ViewerCfg(
             eye=(-0., 2.6, 1.6),
             asset_name = "robot",
