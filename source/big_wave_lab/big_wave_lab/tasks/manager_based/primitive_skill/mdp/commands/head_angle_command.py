@@ -40,9 +40,13 @@ class HeadLookTargetCommand(CommandTerm):
         return self.target_pos_w.clone()
 
     def _update_metrics(self):
+        
+        max_command_time = self.cfg.resampling_time_range[1]
+        max_command_step = max_command_time / self._env.step_dt
+        # # logs data
         current = self.robot.data.joint_pos[:, self.head_joint_ids]
         err = current - self.ref_head_joint_pos[:, 1:]
-        self.metrics["head_angle_error"] += torch.norm(err, dim=-1)
+        self.metrics["head_angle_error"] += torch.norm(err, dim=-1)/max_command_step
 
     def compute(self, dt: float):
         self._update_metrics()
