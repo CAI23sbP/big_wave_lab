@@ -18,10 +18,10 @@ class HeadObservationsCfg(ObservationsCfg):
     class HeadPolicyCfg(ObservationsCfg.PolicyCfg):
         
         target_body_pos_w_diff = ObsTerm(
-            func=mdp.head_target_diff,
+            func=mdp.body_pos_w_diff,
             params={
                 "command_name": "pose_command",
-                "asset_cfg": SceneEntityCfg("robot", joint_names=["head_pitch_.*", "head_yaw_.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names=["camera_head_link"]),
             },
             scale=1.,
             clip=(-18.0, 18.0),
@@ -36,10 +36,10 @@ class HeadObservationsCfg(ObservationsCfg):
     class HeadCriticCfg(ObservationsCfg.CriticCfg):
         
         target_body_pos_w_diff = ObsTerm(
-            func=mdp.head_target_diff,
+            func=mdp.body_pos_w_diff,
             params={
                 "command_name": "pose_command",
-                "asset_cfg": SceneEntityCfg("robot", joint_names=["head_pitch_.*", "head_yaw_.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names=["camera_head_link"]),
             },
             scale=1.,
             clip=(-18.0, 18.0),
@@ -48,12 +48,11 @@ class HeadObservationsCfg(ObservationsCfg):
         
         target_body_pos_w = ObsTerm(
             func=mdp.body_pos_w,
-            params={"asset_cfg":SceneEntityCfg("robot", body_names=["head_.*"])},
+            params={"asset_cfg":SceneEntityCfg("robot", body_names=["camera_head_link"])},
             scale=1.,
             clip=(-18.0, 18.0),
             history_length = 3,
             )
-        
         
         def __post_init__(self):
             super().__post_init__()
@@ -107,7 +106,6 @@ class ProHeadFlatEnvCfg(PosingFlatEnvCfg):
         super().__post_init__()
         robot = PRO_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         self.scene.robot = robot 
-        self.scene.num_envs = 1
         ## event set
         self.events.add_base_mass.params["asset_cfg"].body_names = ["pelvis"]
         self.events.base_external_force_torque.params["asset_cfg"].body_names = ["pelvis"]

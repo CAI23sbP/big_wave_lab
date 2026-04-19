@@ -3,6 +3,12 @@
 ## 1. Installation
 
 ```bash
+isaacgym 5.1.0
+
+isaaclab 2.3.1
+```
+
+```bash
 python -m pip install -e source/big_wave_lab
 ```
 

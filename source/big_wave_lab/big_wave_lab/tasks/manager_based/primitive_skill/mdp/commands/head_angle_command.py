@@ -37,7 +37,7 @@ class HeadLookTargetCommand(CommandTerm):
 
     @property
     def command(self) -> torch.Tensor:
-        return self.ref_head_joint_pos.clone()[:, 1:]
+        return self.target_pos_w.clone()
 
     def _update_metrics(self):
         current = self.robot.data.joint_pos[:, self.head_joint_ids]

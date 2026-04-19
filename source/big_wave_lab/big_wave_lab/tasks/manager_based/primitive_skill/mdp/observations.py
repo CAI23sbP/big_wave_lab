@@ -46,16 +46,6 @@ def body_pos_w_diff(
     ref_body_pos_w = env.command_manager.get_command(command_name).reshape(env.num_envs, len(asset_cfg.body_ids), -1)[:, :, :3]
     return (body_pos_w - ref_body_pos_w).reshape(env.num_envs, -1)
 
-def head_target_diff(
-    env:ManagerBasedRLEnv,
-    command_name: str,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-) -> torch.Tensor:
-    asset: Articulation = env.scene[asset_cfg.name]
-    current_joint_pos = asset.data.joint_pos[:, asset_cfg.joint_ids]
-    target_joint_pos = env.command_manager.get_command(command_name)
-    return (current_joint_pos - target_joint_pos)
-
 def feet_pose_w_diff(
     env:ManagerBasedRLEnv,
     command_name: str,
