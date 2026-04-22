@@ -32,15 +32,9 @@ class SkillSelectCommandCfg(DownStramCommandCfg):
         prim_path="/Visuals/Command/selected_skill",
         markers={
             "walk": sim_utils.CuboidCfg(
-                size=(0.5, 0.5, 0.5),
+                size=(0.25, 0.25, 0.25),
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
             ),
-            
-            "reach": sim_utils.CuboidCfg(
-                size=(0.25, 0.25, 0.25),
-                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0)),
-            ),
-            
             "squat": sim_utils.CuboidCfg(
                 size=(0.25, 0.25, 0.25),
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 0.0, 1.0)),

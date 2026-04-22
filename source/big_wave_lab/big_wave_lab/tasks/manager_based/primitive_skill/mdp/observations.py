@@ -15,6 +15,25 @@ from big_wave_lab.tasks.manager_based.primitive_skill.mdp.commands.gait_command 
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
+    
+def head_target_dir_local(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    target_pos_w = env.command_manager.get_command(command_name)  # [N, 3]
+
+    head_body_id = asset_cfg.body_ids[0]
+    head_pos_w = asset.data.body_state_w[:, head_body_id, :3]
+    head_quat_w = asset.data.body_state_w[:, head_body_id, 3:7]
+
+    target_dir_w = target_pos_w - head_pos_w
+    target_dir_w = target_dir_w / target_dir_w.norm(dim=-1, keepdim=True).clamp(min=1e-6)
+
+    target_dir_b = math_utils.quat_apply_inverse(head_quat_w, target_dir_w)
+    return target_dir_b
 
 def base_height_diff(
     env:ManagerBasedRLEnv,
@@ -186,4 +205,6 @@ class rand_push_torque(ManagerTermBase):
             values = torch.zeros(env.num_envs, 3).to(env.device)
 
         return values
+
+
 

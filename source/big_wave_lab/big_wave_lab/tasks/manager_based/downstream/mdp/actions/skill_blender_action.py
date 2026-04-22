@@ -20,6 +20,9 @@ if TYPE_CHECKING:
     from .pre_trained_skill_policy_action_cfg import SkillBlenderActionCfg
 
 class SkillBlenderAction(ActionTerm):
+    """
+    TODO list
+    """
     cfg: SkillBlenderActionCfg
 
     def __init__(self, cfg: SkillBlenderActionCfg, env: ManagerBasedRLEnv) -> None:

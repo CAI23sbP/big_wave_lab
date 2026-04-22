@@ -25,7 +25,6 @@ LOW_LEVEL_ENV_CFG = PosingFlatEnvCfg()
 ##
 # Pre-defined configs
 ##
-
 @configclass
 class CommandsCfg:
     downstream_command = mdp.DownStramCommandCfg(
@@ -64,35 +63,34 @@ class DownstreamObservationsCfg:
 @configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
-    is_alive = RewTerm(
-        func=mdp.is_alive, 
-        weight=5., 
-    )
-    action_rate_l2 = RewTerm(
-        func=mdp.action_rate_l2, 
-        weight=-0.01, 
-    )
-    orientation = RewTerm(
-        func=primitive_mdp.orientation, 
-        weight=1., 
-    )
-    joint_acc_l2 = RewTerm(
-        func=mdp.joint_acc_l2, 
-        weight=-1e-7, 
-    )
-    joint_torques_l2 = RewTerm(
-        func=mdp.joint_torques_l2, 
-        weight=-1e-5, 
-    )
-    joint_vel_l2 = RewTerm(
-        func=mdp.joint_vel_l2, 
-        weight=-5e-4, 
-    )
-    undesired_contacts = RewTerm(
-        func=mdp.undesired_contacts, 
-        weight=-1., 
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[""]), "threshold": 1.0},
-    )
+    pass 
+    # low_levelaction_rate_l2 = RewTerm(
+    #     func=mdp.low_levelaction_rate_l2, 
+    #     weight=-0.001, 
+    #     params ={"action_name":"downstream_joint_pos",
+    #              "asset_cfg":SceneEntityCfg("robot")}
+    # )
+    # orientation = RewTerm(
+    #     func=primitive_mdp.orientation, 
+    #     weight=0.2, 
+    # )
+    # joint_acc_l2 = RewTerm(
+    #     func=mdp.joint_acc_l2, 
+    #     weight=-1e-7, 
+    # )
+    # joint_torques_l2 = RewTerm(
+    #     func=mdp.joint_torques_l2, 
+    #     weight=-1e-5, 
+    # )
+    # joint_vel_l2 = RewTerm(
+    #     func=mdp.joint_vel_l2, 
+    #     weight=-5e-4, 
+    # )
+    # undesired_contacts = RewTerm(
+    #     func=mdp.undesired_contacts, 
+    #     weight=-1., 
+    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[""]), "threshold": 1.0},
+    # )
     
 @configclass
 class ActionsCfg:
@@ -101,6 +99,7 @@ class ActionsCfg:
         asset_name="robot", 
         upper_body_policy_paths=None, 
         lower_body_policy_paths=None, 
+        scale = None,
         upper_joint_names = None,
         lower_joint_names = None,
         low_level_decimation=4, 
@@ -117,9 +116,8 @@ class ActionsCfg:
 # Environment configuration
 ##
 
-
 @configclass
-class MySceneCfg(InteractiveSceneCfg):
+class DownStreamSceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     # ground terrain
@@ -155,13 +153,12 @@ class MySceneCfg(InteractiveSceneCfg):
         ),
     )
     
-
 @configclass
 class DonwStreamEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion velocity-tracking environment."""
 
     # Scene settings
-    scene = MySceneCfg()
+    scene = DownStreamSceneCfg()
     # Basic settings
     observations: DownstreamObservationsCfg = DownstreamObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -176,7 +173,7 @@ class DonwStreamEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 10
-        self.episode_length_s = 24.0
+        self.episode_length_s = 30.0
         # simulation settings
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation

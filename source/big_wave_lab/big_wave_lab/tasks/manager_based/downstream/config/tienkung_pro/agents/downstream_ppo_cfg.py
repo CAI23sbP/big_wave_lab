@@ -7,7 +7,7 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 class DownstreamFlatPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     class_name = "ModifiedOnPolicyRunner"
     num_steps_per_env = 60
-    experiment_name = "pro_transition"
+    experiment_name = "h1_transition"
     max_iterations = 30001
     save_interval = 50
     obs_groups = {

@@ -81,7 +81,7 @@ class SquatCommandsCfg(CommandsCfg):
             base_height_target=0.9,
             debug_vis=True,
             ranges=mdp.BaseHeightCommandCfg.Ranges(
-                base_height_std=0.2, base_height_scale=(0.3, 1.0)
+                base_height_std=0.2, base_height_scale=(0.3, 0.98)
             ),
         )
 

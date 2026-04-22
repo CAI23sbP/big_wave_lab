@@ -21,7 +21,7 @@ class ReachObservationsCfg(ObservationsCfg):
             func=mdp.body_pos_w_diff,
             params={
                 "command_name": "pose_command",
-                "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*"]),
             },
             scale=1.,
             clip=(-18.0, 18.0),
@@ -38,7 +38,7 @@ class ReachObservationsCfg(ObservationsCfg):
             func=mdp.body_pos_w_diff,
             params={
                 "command_name": "pose_command",
-                "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names=["wrist_roll_.*"]),
             },
             scale=1.,
             clip=(-18.0, 18.0),
@@ -90,14 +90,14 @@ class ReachCommandsCfg(CommandsCfg):
             num_way_points=10,
             debug_vis=True,
             body_names = ["wrist_roll_.*"],
-            ranges=mdp.ArmTargetCommandCfg.Ranges(
+            ranges=mdp.ArmTargetCommandCfg.Ranges(                
                 wrist_max_radius = 0.5,
                 l_wrist_pos_x = (0.35, 0.5),
                 l_wrist_pos_y = (-0.1, 0.25),
                 l_wrist_pos_z = (0.1, 0.25),
                 r_wrist_pos_x = (0.35, 0.5),
                 r_wrist_pos_y = (-0.25, 0.1),
-                r_wrist_pos_z = (0.1, 0.25),            
+                r_wrist_pos_z = (0.1, 0.25),                  
                 ),
         )
         

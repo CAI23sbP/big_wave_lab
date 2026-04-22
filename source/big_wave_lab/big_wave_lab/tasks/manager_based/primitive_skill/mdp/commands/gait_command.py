@@ -76,7 +76,7 @@ class GaitCommand(CommandTerm):
         self.metrics["error_vel_xy"] += torch.norm(self.vel_command_b[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2], dim=-1) / max_command_step
         self.metrics["error_vel_yaw"] += torch.abs(self.vel_command_b[:, 4] - self.robot.data.root_ang_vel_b[:, 2]) / max_command_step
 
-        self._curriculum += torch.exp(-torch.sum(torch.square(self.vel_command_b[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2]), dim=1) * self.cfg.tracking_sigma) / max_command_step
+        self._curriculum += torch.exp(-torch.sum(torch.square(self.vel_command_b[:, 2:4] - self.robot.data.root_lin_vel_b[:, :2]), dim=1) * self.cfg.tracking_sigma) 
     
     @property
     def ref_dof_pos(self):

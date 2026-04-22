@@ -66,26 +66,20 @@ def body_pose_tracking(
     return torch.exp(-4 * body_pose_error)
 
 
-def head_tracking(
+def head_joint_tracking(
     env: ManagerBasedRLEnv,
     command_name: str,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    ) -> torch.Tensor:
+) -> torch.Tensor:
     asset: Articulation = env.scene[asset_cfg.name]
 
-    target_pos_w = env.command_manager.get_command(command_name)
-    head_body_id = asset_cfg.body_ids[0]
-    head_pos_w = asset.data.body_state_w[:, head_body_id, :3]
-    head_quat_w = asset.data.body_state_w[:, head_body_id, 3:7]
-    target_dir_w = target_pos_w - head_pos_w                    # [N, 3]
-    target_dir_w = target_dir_w / torch.norm(target_dir_w, dim=-1, keepdim=True).clamp(min=1e-6)
-    local_forward = asset.data.FORWARD_VEC_B      # [N, 3]
+    cmd_term = env.command_manager.get_term(command_name)
+    target = cmd_term.command[:,1:]                  # [N, 2] = pitch, yaw
 
-    head_forward_w = math_utils.quat_apply(head_quat_w, local_forward)  # [N, 3]
-    head_forward_w = head_forward_w / torch.norm(head_forward_w, dim=-1, keepdim=True).clamp(min=1e-6)
-
-    cos_sim = torch.sum(head_forward_w * target_dir_w, dim=-1)  # [N]
-    return torch.clamp((cos_sim + 1.0) * 0.5, 0.0, 1.0)
+    joint_ids, _ = asset.find_joints(asset_cfg.joint_names)
+    current = asset.data.joint_pos[:, joint_ids]   # [N, 2]
+    err = current - target
+    return torch.exp(-4 * torch.sum(err * err, dim=-1))
 
 def feet_distance(
     env: ManagerBasedRLEnv,

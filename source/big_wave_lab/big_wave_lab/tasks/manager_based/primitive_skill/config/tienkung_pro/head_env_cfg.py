@@ -11,6 +11,10 @@ from isaaclab.envs import ViewerCfg
 import big_wave_lab.tasks.manager_based.primitive_skill.mdp as mdp
 from big_wave_lab.assets.robot_cfg import TIENKUNG_PRO_TRAINING_CFG as PRO_CFG
 
+"""
+Tienkung pro has head joints roll,pitch,yaw
+"""
+
 @configclass
 class HeadObservationsCfg(ObservationsCfg):
     
@@ -18,7 +22,7 @@ class HeadObservationsCfg(ObservationsCfg):
     class HeadPolicyCfg(ObservationsCfg.PolicyCfg):
         
         target_body_pos_w_diff = ObsTerm(
-            func=mdp.body_pos_w_diff,
+            func=mdp.head_target_dir_local,
             params={
                 "command_name": "pose_command",
                 "asset_cfg": SceneEntityCfg("robot", body_names=["camera_head_link"]),
@@ -36,7 +40,7 @@ class HeadObservationsCfg(ObservationsCfg):
     class HeadCriticCfg(ObservationsCfg.CriticCfg):
         
         target_body_pos_w_diff = ObsTerm(
-            func=mdp.body_pos_w_diff,
+            func=mdp.head_target_dir_local,
             params={
                 "command_name": "pose_command",
                 "asset_cfg": SceneEntityCfg("robot", body_names=["camera_head_link"]),
@@ -53,25 +57,22 @@ class HeadObservationsCfg(ObservationsCfg):
             clip=(-18.0, 18.0),
             history_length = 3,
             )
-        
         def __post_init__(self):
             super().__post_init__()
             self.base_mass.params["asset_cfg"].body_names = ["pelvis"]
             self.feet_contact_mask.params["sensor_cfg"].body_names = ["ankle_roll_.*"]
 
-
     policy: HeadPolicyCfg = HeadPolicyCfg()
     critic: HeadCriticCfg = HeadCriticCfg()
-
 
 @configclass
 class HeadRewardCfg(RewardsCfg):
     target_body_position_tracking = RewTerm(
-        func=mdp.head_tracking,
+        func=mdp.head_joint_tracking,
         weight=5.0,
         params={
             "command_name": "pose_command",
-            "asset_cfg": SceneEntityCfg("robot", body_names=["camera_head_link"]),
+            "asset_cfg": SceneEntityCfg("robot", joint_names=["head_pitch_.*", "head_yaw_.*"]),
         }
     )
     def __post_init__(self):
@@ -87,11 +88,11 @@ class HeadCommandsCfg(CommandsCfg):
         self.pose_command = mdp.HeadLookTargetCommandCfg(
             asset_name="robot",
             head_body_name = "camera_head_link",
-            head_joint_names = ["head_pitch_.*", "head_yaw_.*"],
+            head_joint_names = ["head_roll_.*","head_pitch_.*", "head_yaw_.*"],
             resampling_time_range=(0, 10.),
             debug_vis=True,
             ranges=mdp.HeadLookTargetCommandCfg.Ranges(
-                distance = (0.4, 1.2), yaw = (-1.0, 1.0), pitch = (-0.5, 0.5)
+                distance = (0.3, 0.5), yaw = (-1.0, 1.0), pitch = (-1.0, 0.0)
             ),
         )
 
@@ -112,7 +113,7 @@ class ProHeadFlatEnvCfg(PosingFlatEnvCfg):
         
         ## termination set
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
-            "pelvis", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*"
+            "pelvis", "elbow_.*", "shoulder_.*", "wrist_.*", "head_.*", "knee_.*"
         ]
 
 @configclass
@@ -125,7 +126,7 @@ class ProHeadFlatEnvCfg_PLAY(ProHeadFlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
+
         # make a smaller scene for play
         self.scene.num_envs = 1
         self.scene.env_spacing = 2.5
@@ -134,3 +135,5 @@ class ProHeadFlatEnvCfg_PLAY(ProHeadFlatEnvCfg):
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_force_robot = None
+
+        

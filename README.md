@@ -39,11 +39,6 @@ python3 scripts/rsl_rl/train.py --task Isaac-Walk-Rough-Unitree-H1-v0  --headles
 python3 scripts/rsl_rl/train.py --task Isaac-Walk-Rough-Pro-v0  --headless
 ```
 
-### 2.4. Heading (Tienkung Pro Only)
-```bash
-python3 scripts/rsl_rl/train.py --task Isaac-Head-Flat-Pro-v0  --headless
-```
-
 ## 3. Play primitive-skills
 
 ### 3.1. Squatting (H1-2, Tienkung Pro)
@@ -70,29 +65,24 @@ python3 scripts/rsl_rl/play.py  --task Isaac-Walk-Rough-Unitree-H1-Play-v0
 python3 scripts/rsl_rl/play.py  --task Isaac-Walk-Rough-Pro-Play-v0
 ```
 
-### 3.4. Heading (Tienkung Pro Only)
-```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Head-Flat-Pro-Play-v0
-```
-
 ## 4. Train downstram task (TODO list)
 
 ### 4.1. pick and place (H1-2, Tienkung Pro)
 ```bash
-python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Unitree-H1-v0 --headless
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Unitree-H1-v0 --headless
 ```
 ```bash
-python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Pro-v0 --headless
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Pro-v0 --headless
 ```
 
 ## 5. Play downstram task
 
 ### 5.1. pick and place (H1-2, Tienkung Pro)
 ```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Adaptation-Unitree-H1-Play-v0
+python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Unitree-H1-Play-v0
 ```
 ```bash
-python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Adaptation-Pro-Play-v0
+python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Pro-Play-v0
 ```
 
 
@@ -100,10 +90,10 @@ python3 scripts/rsl_rl/play.py  --task Isaac-Pick-and-Place-Adaptation-Pro-Play-
 
 ### 6.1. pick and place vision (H1-2, Tienkung Pro)
 ```bash
-python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Vision-Unitree-H1-v0 --headless
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Vision-Unitree-H1-v0 --headless
 ```
 ```bash
-python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Adaptation-Vision-Pro-v0 --headless
+python3 scripts/rsl_rl/train.py  --task Isaac-Pick-and-Place-Vision-Pro-v0 --headless
 ```
 
 

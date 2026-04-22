@@ -26,8 +26,10 @@ class PartWiseSkillBlenderAction(ActionTerm):
         self._upper_joint_ids = self.robot.find_joints(cfg.upper_joint_names)[0]
         self._lower_joint_ids = self.robot.find_joints(cfg.lower_joint_names)[0]
         
+        self._scale = cfg.scale
         self.upper_body_skill_names = list(cfg.upper_body_policy_paths.keys())
         self.lower_body_skill_names = list(cfg.lower_body_policy_paths.keys())
+        
         self.total_skill_names = self.upper_body_skill_names + self.lower_body_skill_names
         self.lower_idx_to_name = {i: name for i, name in enumerate(self.lower_body_skill_names)}
         
@@ -38,13 +40,14 @@ class PartWiseSkillBlenderAction(ActionTerm):
         for name in self.lower_body_skill_names:
             self._command_size[name] = cfg.lower_body_command_size[name]
 
-        self.uppper_skills = {}
+        
+        self.upper_skills = {}
         for name in self.upper_body_skill_names:
             policy_path = cfg.upper_body_policy_paths[name]
             if not check_file_path(policy_path):
                 raise FileNotFoundError(f"Policy file '{policy_path}' does not exist.")
             file_bytes = read_file(policy_path)
-            self.uppper_skills[name] = torch.jit.load(file_bytes).to(env.device).eval()
+            self.upper_skills[name] = torch.jit.load(file_bytes).to(env.device).eval()
 
         self.lower_skills = {}
         for name in self.lower_body_skill_names:
@@ -53,6 +56,22 @@ class PartWiseSkillBlenderAction(ActionTerm):
                 raise FileNotFoundError(f"Policy file '{policy_path}' does not exist.")
             file_bytes = read_file(policy_path)
             self.lower_skills[name] = torch.jit.load(file_bytes).to(env.device).eval()
+
+        
+        if cfg.head_joint_names is not None:
+            self._head_joint_ids = self.robot.find_joints(cfg.head_joint_names)[0]
+            self.head_skill_names = list(cfg.head_policy_path.keys())
+            self.total_skill_names += self.head_skill_names
+            for name in self.head_skill_names:
+                self._command_size[name] = cfg.head_command_size[name]
+                
+            self.head_skills = {}
+            for name in self.head_skill_names:
+                policy_path = cfg.head_policy_path[name]
+                if not check_file_path(policy_path):
+                    raise FileNotFoundError(f"Policy file '{policy_path}' does not exist.")
+                file_bytes = read_file(policy_path)
+                self.head_skills[name] = torch.jit.load(file_bytes).to(env.device).eval()
 
         self._raw_actions = torch.zeros(self.num_envs, self.action_dim, device=self.device)
         self._low_level_action_term: ActionTerm = cfg.low_level_actions.class_type(cfg.low_level_actions, env)
@@ -71,9 +90,8 @@ class PartWiseSkillBlenderAction(ActionTerm):
 
         cfg.common_low_level_observations.actions.func = lambda dummy_env: last_action()
         cfg.common_low_level_observations.actions.params = dict()
-
         command_obs = {}
-        for name, obs_cfg in cfg.common_low_level_observations.items():
+        for name, obs_cfg in cfg.low_level_command_observations.items():
             
             command_size = self._command_size[name]
             term_name = cfg.low_level_command_term_names[name]
@@ -108,6 +126,7 @@ class PartWiseSkillBlenderAction(ActionTerm):
             env,
         )
         self._counter = 0 
+        self._batch_idx = torch.arange(self.num_envs, device=self.device)
         
     @property
     def action_dim(self) -> int:
@@ -117,6 +136,10 @@ class PartWiseSkillBlenderAction(ActionTerm):
     def raw_actions(self) -> torch.Tensor:
         return self._raw_actions
 
+    @property
+    def processed_actions(self) -> torch.Tensor:
+        return self.raw_actions
+    
     def process_actions(self, actions: torch.Tensor):
         self._raw_actions[:] = actions
         
@@ -129,7 +152,7 @@ class PartWiseSkillBlenderAction(ActionTerm):
         start = 0
         for name in self.total_skill_names:
             dim = self._command_size[name]
-            cmd_dict[name] = torch.tanh(self._raw_actions[:, start : start + dim]) 
+            cmd_dict[name] = torch.clamp(self._raw_actions[:, start : start + dim], self._scale[name][0], self._scale[name][1]) 
             start += dim
         return cmd_dict
 
@@ -140,7 +163,20 @@ class PartWiseSkillBlenderAction(ActionTerm):
         if self._counter % self.cfg.low_level_decimation == 0:
             common_obs = self._low_level_obs_manager.compute_group("common_obs")
             cmd_dict = self._split_actions()
-            for name, upper_skill in self.uppper_skills.items():
+            if self.cfg.head_joint_names is not None:
+                for name, head_skill in self.head_skills.items():
+                    command_obs = cmd_dict[name]
+                    policy_obs = torch.cat(
+                        [
+                            common_obs,
+                            command_obs,
+                        ],
+                        dim=-1,
+                    )
+                    self.low_level_actions[:, self._head_joint_ids] = head_skill(policy_obs)[:, self._head_joint_ids]
+                    
+            
+            for name, upper_skill in self.upper_skills.items():
                 command_obs = cmd_dict[name]
                 policy_obs = torch.cat(
                     [
@@ -149,7 +185,7 @@ class PartWiseSkillBlenderAction(ActionTerm):
                     ],
                     dim=-1,
                 )
-                self.low_level_actions[:, self._upper_joint_ids] = upper_skill(policy_obs)
+                self.low_level_actions[:, self._upper_joint_ids] = upper_skill(policy_obs)[:, self._upper_joint_ids]
                 
             for idx, skill_name in self.lower_idx_to_name.items():
                 lower_skill = self.lower_skills[skill_name]
@@ -161,10 +197,11 @@ class PartWiseSkillBlenderAction(ActionTerm):
                     ],
                     dim=-1,
                 )
-                self.lower_body_actions[:, idx] = lower_skill(policy_obs)
-            self.low_level_actions[:, self._lower_joint_ids] = self.lower_body_actions[:, selected_idx]
+                self.lower_body_actions[:, idx] = lower_skill(policy_obs)[:, self._lower_joint_ids]
+            selected_lower = self.lower_body_actions[self._batch_idx, selected_idx]   
+            self.low_level_actions[:, self._lower_joint_ids] = selected_lower
             self._low_level_action_term.process_actions(self.low_level_actions)
             self._counter = 0
-
+        self._primitive_action[:] = self.low_level_actions[:]
         self._low_level_action_term.apply_actions()
         self._counter += 1

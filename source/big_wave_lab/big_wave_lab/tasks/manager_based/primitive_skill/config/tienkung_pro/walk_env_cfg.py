@@ -64,7 +64,6 @@ class WalkObservationsCfg(ObservationsCfg):
             self.base_mass.params["asset_cfg"].body_names = ["pelvis"]
             self.feet_contact_mask.params["sensor_cfg"].body_names = ["ankle_roll_.*"]
 
-
     policy: WalkPolicyCfg = WalkPolicyCfg()
     critic: WalkCriticCfg = WalkCriticCfg()
         

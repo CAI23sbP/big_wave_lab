@@ -10,17 +10,18 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.envs import ViewerCfg
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 
 import big_wave_lab.tasks.manager_based.downstream.mdp as mdp
-from big_wave_lab.tasks.manager_based.primitive_skill.config.h1.reach_env_cfg import H1ReachFlatEnvCfg
-from big_wave_lab.tasks.manager_based.primitive_skill.config.h1.squat_env_cfg import H1SquatFlatEnvCfg
-from big_wave_lab.tasks.manager_based.primitive_skill.config.h1.walk_env_cfg import H1WalkRoughEnvCfg
+from big_wave_lab.tasks.manager_based.primitive_skill.config.tienkung_pro.reach_env_cfg import ProReachFlatEnvCfg
+from big_wave_lab.tasks.manager_based.primitive_skill.config.tienkung_pro.squat_env_cfg import ProSquatFlatEnvCfg
+from big_wave_lab.tasks.manager_based.primitive_skill.config.tienkung_pro.walk_env_cfg import ProWalkRoughEnvCfg
 ##
+from isaaclab.sensors import RayCasterCameraCfg
+from isaaclab.sensors.ray_caster.patterns import PinholeCameraPatternCfg
+from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
-import math 
 from big_wave_lab.tasks.manager_based.primitive_skill.primitive_skill_env_cfg import EventCfg as PrimitiveEventCfg
 from big_wave_lab.tasks.manager_based.primitive_skill.primitive_skill_env_cfg import TerminationsCfg as PrimitiveTerminationsCfg
 from big_wave_lab.tasks.manager_based.downstream.downstream_env_cfg import (
@@ -31,12 +32,12 @@ DonwStreamEnvCfg,
 ActionsCfg, 
 RewardsCfg,
 )
-from big_wave_lab.assets.robot_cfg import H1_2_CFG
+from big_wave_lab.assets.robot_cfg import TIENKUNG_PRO_TRAINING_CFG as PRO_CFG
 from big_wave_lab.assets.object_cfg import BREAD_BOX_CFG, TABLE_1_CFG, TABLE_2_CFG
 
-REACH_SKILL = H1ReachFlatEnvCfg()
-SQUAT_SKILL = H1SquatFlatEnvCfg()
-WALK_SKILL = H1WalkRoughEnvCfg()
+REACH_SKILL = ProReachFlatEnvCfg()
+SQUAT_SKILL = ProSquatFlatEnvCfg()
+WALK_SKILL = ProWalkRoughEnvCfg()
 
 @configclass
 class PickandPlaceSceneCfg(DownStreamSceneCfg):
@@ -47,13 +48,32 @@ class PickandPlaceSceneCfg(DownStreamSceneCfg):
         super().__post_init__()
         self.table_1.spawn.scale = (1.5,1.5,1.5)
         self.table_2.spawn.scale = (1.5,1.5,1.5)
+        # self.height_scanner = RayCasterCameraCfg(
+        #     prim_path="{ENV_REGEX_NS}/Robot/camera_head_link",
+        #     data_types=["distance_to_camera"],
+        #     offset=RayCasterCameraCfg.OffsetCfg(pos=(0.375, 0.0, 20.0)),
+        #     pattern_cfg=PinholeCameraPatternCfg(
+        #         focal_length=11.041, 
+        #         horizontal_aperture=20.955,
+        #         vertical_aperture = 12.240,
+        #         height=60,
+        #         width=106,
+        #     ),
+        #     debug_vis=True,
+        #     mesh_prim_paths=["/World/ground"],
+        # )
         
-
 @configclass
 class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
     @configclass
     class PickandPlacePolicyCfg(DownstreamObservationsCfg.DownstreamPolicyCfg):
         
+        # height_scan = ObsTerm(
+        #     func=mdp.height_scan,
+        #     params={"sensor_cfg": SceneEntityCfg("height_scanner"), "offset": 0.0},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        #     clip=(-18.0, 18.0),
+        # )
         far_from_goal = ObsTerm(
             func=mdp.far_from_goal, 
             params={
@@ -63,11 +83,10 @@ class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
             scale=1.,
             clip=(-18.0, 18.0),
             )
-        
         wrist_command = ObsTerm(
             func=mdp.wrist_box_diff_obs, 
             params={
-                "asset_cfg": SceneEntityCfg("robot", body_names = [".*_wrist_yaw_.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names = ["wrist_roll_.*"]),
                 "object_cfg":SceneEntityCfg("target_object") 
                 },
             scale=1.,
@@ -117,7 +136,7 @@ class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
         wrist_pos_w = ObsTerm(
             func=mdp.wrist_pos_w, 
             params={                
-                "asset_cfg": SceneEntityCfg("robot", body_names = [".*_wrist_yaw_.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names = ["wrist_roll_.*"]),
                 },
             scale=1.,
             clip=(-18.0, 18.0),
@@ -126,7 +145,7 @@ class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
         wrist_command = ObsTerm(
             func=mdp.wrist_box_diff_obs, 
             params={
-                "asset_cfg": SceneEntityCfg("robot", body_names = [".*_wrist_yaw_.*"]),
+                "asset_cfg": SceneEntityCfg("robot", body_names = ["wrist_roll_.*"]),
                 "object_cfg":SceneEntityCfg("target_object") 
                 },
             scale=1.,
@@ -135,14 +154,17 @@ class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
             )
         def __post_init__(self):
             super().__post_init__()
-            self.base_mass.params["asset_cfg"].body_names = [".*torso_link"]
-            self.feet_contact_mask.params["sensor_cfg"].body_names = [".*_ankle_roll_.*"]
+            self.base_mass.params["asset_cfg"].body_names = ["pelvis"]
+            self.feet_contact_mask.params["sensor_cfg"].body_names = ["ankle_roll_.*"]
 
+
+    
     policy: PickandPlacePolicyCfg = PickandPlacePolicyCfg()
     critic: PickandPlaceCriticCfg = PickandPlaceCriticCfg()
 
 @configclass
 class PickandPlaceRewardsCfg(RewardsCfg):
+
     box_pos_diff = RewTerm(
         func=mdp.box_pos_diff, 
         weight=5., 
@@ -154,15 +176,15 @@ class PickandPlaceRewardsCfg(RewardsCfg):
     
     wrist_box_distance = RewTerm(
         func=mdp.wrist_box_distance, 
-        weight=1., 
+        weight=5., 
         params={
             "object_cfg": SceneEntityCfg("target_object"),
-            "asset_cfg": SceneEntityCfg("robot", body_names = [".*_wrist_yaw_.*"]),
+            "asset_cfg": SceneEntityCfg("robot", body_names = ["wrist_roll_.*"]),
             },
     )
     def __post_init__(self):
         super().__post_init__()
-        # self.undesired_contacts.params["sensor_cfg"].body_names=["pelvis", ".*torso_link", ".*_shoulder_.*",  ".*_elbow_.*",]
+        # self.undesired_contacts.params["sensor_cfg"].body_names=["pelvis", "elbow_.*", "shoulder_.*", "head_.*",]
 
 @configclass 
 class PickandPlaceTerminationCfg(PrimitiveTerminationsCfg):
@@ -180,9 +202,11 @@ class PickandPlaceTerminationCfg(PrimitiveTerminationsCfg):
         super().__post_init__()
         self.base_contact.params["sensor_cfg"].body_names = [
             "pelvis", 
-            ".*torso_link", 
-            ".*_shoulder_.*", 
-            ".*_elbow_.*",
+            "body_yaw_.*", 
+            "shoulder_.*",  
+            "elbow_.*",
+            "knee_.*",
+            "hip_.*"
         ]
         
 @configclass 
@@ -207,11 +231,12 @@ class PickandPlaceEventsCfg(PrimitiveEventCfg):
             },
         },
     )
+
     def __post_init__(self):
         super().__post_init__()        
         ## event set
-        self.add_base_mass.params["asset_cfg"].body_names = [".*torso_link"]
-        self.base_external_force_torque.params["asset_cfg"].body_names = [".*torso_link"]
+        self.add_base_mass.params["asset_cfg"].body_names = ["pelvis"]
+        self.base_external_force_torque.params["asset_cfg"].body_names = ["body_yaw_.*"]
 
 @configclass
 class PickandPlaceActionsCfg(ActionsCfg):
@@ -221,16 +246,17 @@ class PickandPlaceActionsCfg(ActionsCfg):
         self.downstream_joint_pos.scale = {
             "squat": (-1., 1.),
             "reach": (-1., 1.),
-            "walk": (-2., 2.)
+            "walk": (-2., 2.),
         }
-        self.downstream_joint_pos.upper_joint_names = [".*_shoulder_.*", ".*_elbow_.*", ".*_wrist_.*"]
-        self.downstream_joint_pos.lower_joint_names = [".*_ankle_.*",".*_hip_.*", "torso_.*"]
+        
+        self.downstream_joint_pos.upper_joint_names = ["shoulder_.*", "elbow_.*", "wrist_.*"]
+        self.downstream_joint_pos.lower_joint_names = ["ankle_.*","hip_.*", "body_yaw_.*"]
         self.downstream_joint_pos.upper_body_policy_paths = {
-            "reach":"/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/h1_reach/2026-04-13_15-35-08/exported/policy.pt",
+            "reach":"/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/pro_reach/hanyang_erica/exported/policy.pt",
         }
         self.downstream_joint_pos.lower_body_policy_paths = {
-            "squat": "/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/h1_squat/2026-04-13_14-01-50/exported/policy.pt",
-            "walk": "/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/h1_walk/2026-04-19_22-52-39/exported/policy.pt",
+            "squat": "/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/pro_squat/hanyang_erica/exported/policy.pt",
+            "walk": "/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/pro_walk/hanyang_erica/exported/policy.pt",
         }
         self.downstream_joint_pos.low_level_command_term_names = {
             "squat": "base_height_diff",
@@ -258,11 +284,11 @@ class PickandPlaceCommandsCfg(CommandsCfg):
             resampling_time_range=(4., 4.),
             action_name = "downstream_joint_pos",
             num_skills = 2, # only lower body
-            debug_vis = False
+            debug_vis = True
         )
         
 @configclass
-class H1PickandPlaceEnvCfg(DonwStreamEnvCfg):
+class ProPickandPlaceEnvCfg(DonwStreamEnvCfg):
     scene: PickandPlaceSceneCfg = PickandPlaceSceneCfg(num_envs=4096, env_spacing=2.5)
     actions: PickandPlaceActionsCfg = PickandPlaceActionsCfg()
     events: PickandPlaceEventsCfg = PickandPlaceEventsCfg()
@@ -273,11 +299,12 @@ class H1PickandPlaceEnvCfg(DonwStreamEnvCfg):
     
     def __post_init__(self):
         super().__post_init__()
-        self.scene.robot = H1_2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = PRO_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        # self.scene.height_scanner.update_period = self.decimation * self.sim.dt * 5
         
 
 @configclass
-class H1PickandPlaceEnvCfg_PLAY(H1PickandPlaceEnvCfg):
+class ProPickandPlaceEnvCfg_PLAY(ProPickandPlaceEnvCfg):
     viewer = ViewerCfg(
             eye=(-0., 2.6, 1.6),
             asset_name = "robot",
@@ -296,4 +323,3 @@ class H1PickandPlaceEnvCfg_PLAY(H1PickandPlaceEnvCfg):
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_force_robot = None
-        self.commands.downstream_command.debug_vis = True

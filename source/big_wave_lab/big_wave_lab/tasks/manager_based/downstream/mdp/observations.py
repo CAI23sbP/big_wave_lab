@@ -16,30 +16,48 @@ from big_wave_lab.tasks.manager_based.primitive_skill.mdp.commands.gait_command 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
 
-def target_pos_diff(
+def far_from_goal(
     env:ManagerBasedRLEnv,
-    action_name:str,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot") 
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"), 
+    end_table_cfg: SceneEntityCfg = SceneEntityCfg("table") 
 ) -> torch.Tensor:
-    asset: Articulation = env.scene[asset_cfg.name]
-    return env.action_manager.get_term(action_name).target_primitive_action - asset.data.joint_pos
+    target_obj = env.scene[object_cfg.name]
+    end_table = env.scene[end_table_cfg.name]
+    diff = target_obj.data.body_pos_w - end_table.data.body_pos_w 
+    return torch.flatten(diff[:, 0, :3], start_dim=1)
 
 def wrist_box_diff_obs(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), 
     object_cfg: SceneEntityCfg = SceneEntityCfg("object") 
 ) -> torch.Tensor:
-    """
-    Object observations (in world frame):
-    """
     robot = env.scene[asset_cfg.name]
     object = env.scene[object_cfg.name]
     body_pos_w = robot.data.body_pos_w
-    robot_eef_pos = body_pos_w[:, asset_cfg.body_ids,:3] - env.scene.env_origins
-
-    object_pos = object.data.root_pos_w - env.scene.env_origins
-    # object_quat = object.data.root_quat_w
-
-    robot_eef_to_object = object_pos - robot_eef_pos
-
+    robot_eef_pos = body_pos_w[:, asset_cfg.body_ids, :3]
+    robot_eef_to_object = robot_eef_pos - object.data.body_pos_w [:, :, :3]
     return torch.flatten(robot_eef_to_object, start_dim=1)
+
+def wrist_pos_w(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), 
+) -> torch.Tensor:
+    robot = env.scene[asset_cfg.name]
+    body_pos_w = robot.data.body_pos_w
+    robot_eef_pos = body_pos_w[:, asset_cfg.body_ids, :3]
+    return torch.flatten(robot_eef_pos, start_dim=1)
+
+def box_pos(
+    env: ManagerBasedRLEnv,
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object") 
+) -> torch.Tensor:
+    object = env.scene[object_cfg.name]
+    return torch.flatten(object.data.body_pos_w[:, 0] , start_dim=1)
+
+
+def end_table_pos(
+    env: ManagerBasedRLEnv,
+    end_table_cfg: SceneEntityCfg = SceneEntityCfg("table") 
+) -> torch.Tensor:
+    end_table = env.scene[end_table_cfg.name]
+    return torch.flatten(end_table.data.body_pos_w[:, 0] , start_dim=1)

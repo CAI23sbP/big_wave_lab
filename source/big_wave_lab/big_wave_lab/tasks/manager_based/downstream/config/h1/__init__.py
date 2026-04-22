@@ -28,7 +28,7 @@ gym.register(
     disable_env_checker=True,
     order_enforce = False,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.pick_and_place_env_cfg:H1PickandPlaceVisionEnvCfg_PLAY",
+        "env_cfg_entry_point": f"{__name__}.pick_and_place_env_cfg:H1PickandPlaceEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.pick_and_place_ppo_cfg:H1PickandPlacePPORunnerCfg",
     },
 )

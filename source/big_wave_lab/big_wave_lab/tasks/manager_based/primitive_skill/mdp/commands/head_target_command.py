@@ -25,7 +25,7 @@ class HeadLookTargetCommand(CommandTerm):
 
         self.head_body_idx = self.robot.find_bodies([cfg.head_body_name])[0][0]
         self.head_joint_ids, _ = self.robot.find_joints(cfg.head_joint_names, preserve_order=True)
-        assert len(self.head_joint_ids) == 2, "Expected 2 head joints: roll, pitch, yaw"
+        assert len(self.head_joint_ids) == 3, "Expected 3 head joints: roll, pitch, yaw"
 
         # [N, 3] = (roll, pitch, yaw)
         self.ref_head_joint_pos = torch.zeros(self.num_envs, 3, device=self.device)
@@ -37,15 +37,13 @@ class HeadLookTargetCommand(CommandTerm):
 
     @property
     def command(self) -> torch.Tensor:
-        return self.target_pos_w.clone()
-
+        return self.ref_head_joint_pos.clone()
+    
     def _update_metrics(self):
-        
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
-        # # logs data
         current = self.robot.data.joint_pos[:, self.head_joint_ids]
-        err = current - self.ref_head_joint_pos[:, 1:]
+        err = current - self.ref_head_joint_pos[:, :]
         self.metrics["head_angle_error"] += torch.norm(err, dim=-1)/max_command_step
 
     def compute(self, dt: float):

@@ -745,31 +745,6 @@
     <child link="left_tcp_link" />
     <axis xyz="0 0 0" />
   </joint>
-  <link name="left_hand">
-    <inertial>
-      <origin xyz="0.000415 0.000651 0.017052" rpy="0 0 3.14" />
-      <mass value="0.131751" />
-      <inertia ixx="6.9e-05" ixy="0.0" ixz="-1e-06" iyy="0.000116" iyz="0.0" izz="0.00011" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="-0.0121421 0.0687509 -1.7457469"/>
-      <geometry>
-        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/l_hand_geometry_mesh.obj" scale="1. 1. 1."/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="-0.0121421 0.0687509 -1.7457469"/>
-      <geometry>
-        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/l_hand_geometry_mesh.obj" scale="1. 1. 1."/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="left_hand_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0" />
-    <parent link="left_tcp_link" />
-    <child link="left_hand" />
-    <axis xyz="0 0 0" />
-  </joint>
   <link name="shoulder_pitch_r_link">
     <inertial>
       <origin xyz="0.007494 -0.064184 -2e-05" rpy="0 0 0" />
@@ -1001,31 +976,6 @@
     <child link="right_tcp_link" />
     <axis xyz="0 0 0" />
   </joint>
-  <link name="right_hand">
-    <inertial>
-      <origin xyz="0.000415 -0.000651 0.017052" rpy="0 0 0" />
-      <mass value="0.131751" />
-      <inertia ixx="6.9e-05" ixy="0.0" ixz="-1e-06" iyy="0.000116" iyz="0.0" izz="0.00011" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0.0151911 0.0859374 1.7459825"/>
-      <geometry>
-        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/r_hand_geometry_mesh.obj" scale="1. 1. 1."/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0.0151911 0.0859374 1.7459825"/>
-      <geometry>
-        <mesh filename="file:///home/cai/humanoid_ws/big_wave_lab/source/big_wave_lab/big_wave_lab/assets/robots/tienkung_robots/tienkung_pro/urdf/meshes/r_hand_geometry_mesh.obj" scale="1. 1. 1."/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="right_hand" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0" />
-    <parent link="right_tcp_link" />
-    <child link="right_hand" />
-    <axis xyz="0 0 0" />
-  </joint>
   <link name="imu_link">
     <inertial>
       <origin xyz="-0.006331 -0.007725 -0.008045" rpy="0 0 0" />
@@ -1054,5 +1004,4 @@
     <child link="imu_link" />
     <axis xyz="0 0 0" />
   </joint>
-  
 </robot>
