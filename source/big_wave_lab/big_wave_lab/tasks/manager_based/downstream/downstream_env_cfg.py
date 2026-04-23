@@ -29,7 +29,7 @@ LOW_LEVEL_ENV_CFG = PosingFlatEnvCfg()
 class CommandsCfg:
     downstream_command = mdp.DownStramCommandCfg(
         asset_name="robot",
-        resampling_time_range=(0, 0.),
+        resampling_time_range=(0, 4.),
         debug_vis=False,
     )
 
@@ -63,17 +63,16 @@ class DownstreamObservationsCfg:
 @configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
-    pass 
     # low_levelaction_rate_l2 = RewTerm(
     #     func=mdp.low_levelaction_rate_l2, 
     #     weight=-0.001, 
     #     params ={"action_name":"downstream_joint_pos",
     #              "asset_cfg":SceneEntityCfg("robot")}
     # )
-    # orientation = RewTerm(
-    #     func=primitive_mdp.orientation, 
-    #     weight=0.2, 
-    # )
+    orientation = RewTerm(
+        func=primitive_mdp.orientation, 
+        weight=0.2, 
+    )
     # joint_acc_l2 = RewTerm(
     #     func=mdp.joint_acc_l2, 
     #     weight=-1e-7, 
@@ -102,7 +101,7 @@ class ActionsCfg:
         scale = None,
         upper_joint_names = None,
         lower_joint_names = None,
-        low_level_decimation=4, 
+        low_level_decimation=1, 
         high_level_command_name = "downstream_command",
         low_level_actions = LOW_LEVEL_ENV_CFG.actions.joint_pos,
         common_low_level_observations = LOW_LEVEL_ENV_CFG.observations.policy,

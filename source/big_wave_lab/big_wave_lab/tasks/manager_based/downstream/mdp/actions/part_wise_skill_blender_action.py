@@ -11,7 +11,7 @@ from isaaclab.managers import (
     ObservationManager,
 )
 from isaaclab.utils.assets import check_file_path, read_file
-
+from tensordict import TensorDict
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
     from .pre_trained_skill_policy_action_cfg import PartWiseSkillBlenderCfg
@@ -56,7 +56,6 @@ class PartWiseSkillBlenderAction(ActionTerm):
                 raise FileNotFoundError(f"Policy file '{policy_path}' does not exist.")
             file_bytes = read_file(policy_path)
             self.lower_skills[name] = torch.jit.load(file_bytes).to(env.device).eval()
-
         
         if cfg.head_joint_names is not None:
             self._head_joint_ids = self.robot.find_joints(cfg.head_joint_names)[0]
@@ -80,7 +79,6 @@ class PartWiseSkillBlenderAction(ActionTerm):
         )
         self._primitive_action = torch.zeros_like(self.low_level_actions)
         self.lower_body_actions = torch.zeros(self.num_envs, len(self.lower_skills), len(self._lower_joint_ids), device=self.device) 
-
 
         def last_action():
             # reset the low level actions if the episode was reset
@@ -127,7 +125,7 @@ class PartWiseSkillBlenderAction(ActionTerm):
         )
         self._counter = 0 
         self._batch_idx = torch.arange(self.num_envs, device=self.device)
-        
+
     @property
     def action_dim(self) -> int:
         return sum(self._command_size.values()) 
@@ -158,8 +156,7 @@ class PartWiseSkillBlenderAction(ActionTerm):
 
     def apply_actions(self):
         high_level_command = self._env.command_manager.get_command(self.cfg.high_level_command_name)
-        selected_idx = torch.argmax(high_level_command, dim=-1)
-        
+        self._selected_idx = torch.argmax(high_level_command, dim=-1)
         if self._counter % self.cfg.low_level_decimation == 0:
             common_obs = self._low_level_obs_manager.compute_group("common_obs")
             cmd_dict = self._split_actions()
@@ -173,9 +170,9 @@ class PartWiseSkillBlenderAction(ActionTerm):
                         ],
                         dim=-1,
                     )
-                    self.low_level_actions[:, self._head_joint_ids] = head_skill(policy_obs)[:, self._head_joint_ids]
+                    head_action = head_skill(policy_obs)[:, self._head_joint_ids]
+                    self.low_level_actions[:, self._head_joint_ids] = head_action
                     
-            
             for name, upper_skill in self.upper_skills.items():
                 command_obs = cmd_dict[name]
                 policy_obs = torch.cat(
@@ -185,7 +182,8 @@ class PartWiseSkillBlenderAction(ActionTerm):
                     ],
                     dim=-1,
                 )
-                self.low_level_actions[:, self._upper_joint_ids] = upper_skill(policy_obs)[:, self._upper_joint_ids]
+                upper_action = upper_skill(policy_obs)[:, self._upper_joint_ids]
+                self.low_level_actions[:, self._upper_joint_ids] = upper_action
                 
             for idx, skill_name in self.lower_idx_to_name.items():
                 lower_skill = self.lower_skills[skill_name]
@@ -197,8 +195,9 @@ class PartWiseSkillBlenderAction(ActionTerm):
                     ],
                     dim=-1,
                 )
-                self.lower_body_actions[:, idx] = lower_skill(policy_obs)[:, self._lower_joint_ids]
-            selected_lower = self.lower_body_actions[self._batch_idx, selected_idx]   
+                lower_action = lower_skill(policy_obs)[:, self._lower_joint_ids]
+                self.lower_body_actions[:, idx] = lower_action
+            selected_lower = self.lower_body_actions[self._batch_idx, self._selected_idx]   
             self.low_level_actions[:, self._lower_joint_ids] = selected_lower
             self._low_level_action_term.process_actions(self.low_level_actions)
             self._counter = 0

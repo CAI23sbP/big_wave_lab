@@ -5,9 +5,8 @@ import torch.nn as nn
 from torch.distributions import Normal
 
 from rsl_rl.networks import MLP, EmpiricalNormalization
-from rsl_rl.modules import ActorCritic
 
-class ActorCriticVision(ActorCritic):
+class ActorCriticVision(nn.Module):
     is_recurrent = False
     def __init__(
         self,

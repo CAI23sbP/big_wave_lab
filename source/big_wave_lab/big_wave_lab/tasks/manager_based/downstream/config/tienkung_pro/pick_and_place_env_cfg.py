@@ -18,9 +18,6 @@ from big_wave_lab.tasks.manager_based.primitive_skill.config.tienkung_pro.reach_
 from big_wave_lab.tasks.manager_based.primitive_skill.config.tienkung_pro.squat_env_cfg import ProSquatFlatEnvCfg
 from big_wave_lab.tasks.manager_based.primitive_skill.config.tienkung_pro.walk_env_cfg import ProWalkRoughEnvCfg
 ##
-from isaaclab.sensors import RayCasterCameraCfg
-from isaaclab.sensors.ray_caster.patterns import PinholeCameraPatternCfg
-from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 from big_wave_lab.tasks.manager_based.primitive_skill.primitive_skill_env_cfg import EventCfg as PrimitiveEventCfg
 from big_wave_lab.tasks.manager_based.primitive_skill.primitive_skill_env_cfg import TerminationsCfg as PrimitiveTerminationsCfg
@@ -48,32 +45,12 @@ class PickandPlaceSceneCfg(DownStreamSceneCfg):
         super().__post_init__()
         self.table_1.spawn.scale = (1.5,1.5,1.5)
         self.table_2.spawn.scale = (1.5,1.5,1.5)
-        # self.height_scanner = RayCasterCameraCfg(
-        #     prim_path="{ENV_REGEX_NS}/Robot/camera_head_link",
-        #     data_types=["distance_to_camera"],
-        #     offset=RayCasterCameraCfg.OffsetCfg(pos=(0.375, 0.0, 20.0)),
-        #     pattern_cfg=PinholeCameraPatternCfg(
-        #         focal_length=11.041, 
-        #         horizontal_aperture=20.955,
-        #         vertical_aperture = 12.240,
-        #         height=60,
-        #         width=106,
-        #     ),
-        #     debug_vis=True,
-        #     mesh_prim_paths=["/World/ground"],
-        # )
         
 @configclass
 class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
     @configclass
     class PickandPlacePolicyCfg(DownstreamObservationsCfg.DownstreamPolicyCfg):
         
-        # height_scan = ObsTerm(
-        #     func=mdp.height_scan,
-        #     params={"sensor_cfg": SceneEntityCfg("height_scanner"), "offset": 0.0},
-        #     noise=Unoise(n_min=-0.1, n_max=0.1),
-        #     clip=(-18.0, 18.0),
-        # )
         far_from_goal = ObsTerm(
             func=mdp.far_from_goal, 
             params={
@@ -176,7 +153,7 @@ class PickandPlaceRewardsCfg(RewardsCfg):
     
     wrist_box_distance = RewTerm(
         func=mdp.wrist_box_distance, 
-        weight=5., 
+        weight=1., 
         params={
             "object_cfg": SceneEntityCfg("target_object"),
             "asset_cfg": SceneEntityCfg("robot", body_names = ["wrist_roll_.*"]),
@@ -184,7 +161,6 @@ class PickandPlaceRewardsCfg(RewardsCfg):
     )
     def __post_init__(self):
         super().__post_init__()
-        # self.undesired_contacts.params["sensor_cfg"].body_names=["pelvis", "elbow_.*", "shoulder_.*", "head_.*",]
 
 @configclass 
 class PickandPlaceTerminationCfg(PrimitiveTerminationsCfg):
@@ -249,7 +225,7 @@ class PickandPlaceActionsCfg(ActionsCfg):
             "walk": (-2., 2.),
         }
         
-        self.downstream_joint_pos.upper_joint_names = ["shoulder_.*", "elbow_.*", "wrist_.*"]
+        self.downstream_joint_pos.upper_joint_names = ["head_.*","shoulder_.*", "elbow_.*", "wrist_.*"]
         self.downstream_joint_pos.lower_joint_names = ["ankle_.*","hip_.*", "body_yaw_.*"]
         self.downstream_joint_pos.upper_body_policy_paths = {
             "reach":"/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/pro_reach/hanyang_erica/exported/policy.pt",
@@ -281,7 +257,7 @@ class PickandPlaceCommandsCfg(CommandsCfg):
     def __post_init__(self):
         self.downstream_command = mdp.SkillSelectCommandCfg(
             asset_name="robot",
-            resampling_time_range=(4., 4.),
+            resampling_time_range=(0., 4.),
             action_name = "downstream_joint_pos",
             num_skills = 2, # only lower body
             debug_vis = True
@@ -300,7 +276,6 @@ class ProPickandPlaceEnvCfg(DonwStreamEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.robot = PRO_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-        # self.scene.height_scanner.update_period = self.decimation * self.sim.dt * 5
         
 
 @configclass
@@ -323,3 +298,6 @@ class ProPickandPlaceEnvCfg_PLAY(ProPickandPlaceEnvCfg):
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_force_robot = None
+        
+        
+        

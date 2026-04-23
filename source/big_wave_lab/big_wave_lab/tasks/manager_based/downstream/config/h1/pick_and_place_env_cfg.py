@@ -279,7 +279,7 @@ class H1PickandPlaceEnvCfg(DonwStreamEnvCfg):
 @configclass
 class H1PickandPlaceEnvCfg_PLAY(H1PickandPlaceEnvCfg):
     viewer = ViewerCfg(
-            eye=(-0., 2.6, 1.6),
+            eye=(-0., 4.4, 3.0),
             asset_name = "robot",
             origin_type = 'asset_root',
         )

@@ -61,3 +61,9 @@ def end_table_pos(
 ) -> torch.Tensor:
     end_table = env.scene[end_table_cfg.name]
     return torch.flatten(end_table.data.body_pos_w[:, 0] , start_dim=1)
+
+
+class image_features(ManagerTermBase):
+    def __init__(self, cfg: ObservationTermCfg, env: ManagerBasedEnv):
+        # initialize the base class
+        super().__init__(cfg, env)

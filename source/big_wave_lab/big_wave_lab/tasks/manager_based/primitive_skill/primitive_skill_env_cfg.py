@@ -59,7 +59,7 @@ class MySceneCfg(InteractiveSceneCfg):
             texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
         ),
     )
-    height_scanner = None 
+    camera = None 
     
 @configclass
 class CommandsCfg:
