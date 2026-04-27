@@ -86,11 +86,13 @@ class ObservationsCfg:
             func=mdp.joint_pos_rel, 
             noise=Unoise(n_min=-0.05 * 0.6, n_max=0.05 * 0.6),
             scale=1.,
+            params= {"asset_cfg": SceneEntityCfg("robot")},
             clip=(-18.0, 18.0),
             )
         joint_vel = ObsTerm(
             func=mdp.joint_vel_rel, 
             noise=Unoise(n_min=-0.5 * 0.6, n_max=0.5 * 0.6),
+            params= {"asset_cfg": SceneEntityCfg("robot")},
             scale=0.05,
             clip=(-18.0, 18.0),
             )
@@ -202,13 +204,16 @@ class RewardsCfg:
     )
     joint_acc_l2 = RewTerm(
         func=mdp.joint_acc_l2, 
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*"])},
         weight=-1e-7, 
     )
     joint_torques_l2 = RewTerm(
         func=mdp.joint_torques_l2, 
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*"])},
         weight=-1e-5, 
     )
     joint_vel_l2 = RewTerm(
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*"])},
         func=mdp.joint_vel_l2, 
         weight=-5e-4, 
     )

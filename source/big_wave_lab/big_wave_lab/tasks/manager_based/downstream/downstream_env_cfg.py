@@ -1,21 +1,17 @@
 
-import math
 from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import RewardTermCfg as RewTerm
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
-from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
 
 import big_wave_lab.tasks.manager_based.downstream.mdp as mdp
 import big_wave_lab.tasks.manager_based.primitive_skill.mdp as primitive_mdp
@@ -46,55 +42,58 @@ class DownstreamObservationsCfg:
             scale=1.,
             clip=(-18.0, 18.0),
             )
+        last_ll_actions = ObsTerm(
+            func=mdp.last_ll_actions,
+            params={"action_name": "downstream_joint_pos"},
+            )
+        
         def __post_init__(self):
             super().__post_init__()
             
     @configclass
     class DownstreamCriticCfg(LOW_LEVEL_ENV_CFG.observations.CriticCfg):
         
+        last_ll_actions = ObsTerm(
+            func=mdp.last_ll_actions,
+            params={"action_name": "downstream_joint_pos"},
+            history_length = 3,
+            
+            )
         def __post_init__(self):
             super().__post_init__()
             self.pose_command.params["command_name"] = "downstream_command"
-            
+    
+    @configclass
+    class DownStreamCommandCfg(ObsGroup):
+        """Observations for policy group."""
+        pose_command = ObsTerm(
+            func=mdp.generated_commands, 
+            params={"command_name": "downstream_command"},
+            scale=1.,
+            clip=(-18.0, 18.0),
+            )
+
     # observation groups
     policy: DownstreamPolicyCfg = DownstreamPolicyCfg()
     critic: DownstreamCriticCfg = DownstreamCriticCfg()
+    command: DownStreamCommandCfg = DownStreamCommandCfg()
 
 @configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
-    # low_levelaction_rate_l2 = RewTerm(
-    #     func=mdp.low_levelaction_rate_l2, 
-    #     weight=-0.001, 
-    #     params ={"action_name":"downstream_joint_pos",
-    #              "asset_cfg":SceneEntityCfg("robot")}
-    # )
     orientation = RewTerm(
         func=primitive_mdp.orientation, 
-        weight=0.2, 
+        weight=1., 
     )
-    # joint_acc_l2 = RewTerm(
-    #     func=mdp.joint_acc_l2, 
-    #     weight=-1e-7, 
-    # )
-    # joint_torques_l2 = RewTerm(
-    #     func=mdp.joint_torques_l2, 
-    #     weight=-1e-5, 
-    # )
-    # joint_vel_l2 = RewTerm(
-    #     func=mdp.joint_vel_l2, 
-    #     weight=-5e-4, 
-    # )
-    # undesired_contacts = RewTerm(
-    #     func=mdp.undesired_contacts, 
-    #     weight=-1., 
-    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=[""]), "threshold": 1.0},
-    # )
+    joint_acc_l2 = RewTerm(
+        func=mdp.joint_acc_l2, 
+        weight=-1e-7, 
+    )
     
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
-    downstream_joint_pos = mdp.PartWiseSkillBlenderCfg(
+    downstream_joint_pos = mdp.PureSkillBlenderCfg(
         asset_name="robot", 
         upper_body_policy_paths=None, 
         lower_body_policy_paths=None, 
@@ -102,7 +101,6 @@ class ActionsCfg:
         upper_joint_names = None,
         lower_joint_names = None,
         low_level_decimation=1, 
-        high_level_command_name = "downstream_command",
         low_level_actions = LOW_LEVEL_ENV_CFG.actions.joint_pos,
         common_low_level_observations = LOW_LEVEL_ENV_CFG.observations.policy,
         low_level_command_observations = None,

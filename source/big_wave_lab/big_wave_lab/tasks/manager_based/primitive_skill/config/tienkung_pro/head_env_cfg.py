@@ -20,7 +20,7 @@ class HeadObservationsCfg(ObservationsCfg):
     
     @configclass
     class HeadPolicyCfg(ObservationsCfg.PolicyCfg):
-        
+
         target_body_pos_w_diff = ObsTerm(
             func=mdp.head_target_dir_local,
             params={
@@ -35,10 +35,10 @@ class HeadObservationsCfg(ObservationsCfg):
         def __post_init__(self):
             self.enable_corruption = True
             self.concatenate_terms = True
-            
+
     @configclass
     class HeadCriticCfg(ObservationsCfg.CriticCfg):
-        
+
         target_body_pos_w_diff = ObsTerm(
             func=mdp.head_target_dir_local,
             params={
@@ -49,7 +49,7 @@ class HeadObservationsCfg(ObservationsCfg):
             clip=(-18.0, 18.0),
             history_length = 3,
             )
-        
+
         target_body_pos_w = ObsTerm(
             func=mdp.body_pos_w,
             params={"asset_cfg":SceneEntityCfg("robot", body_names=["camera_head_link"])},
@@ -64,7 +64,7 @@ class HeadObservationsCfg(ObservationsCfg):
 
     policy: HeadPolicyCfg = HeadPolicyCfg()
     critic: HeadCriticCfg = HeadCriticCfg()
-
+    
 @configclass
 class HeadRewardCfg(RewardsCfg):
     target_body_position_tracking = RewTerm(

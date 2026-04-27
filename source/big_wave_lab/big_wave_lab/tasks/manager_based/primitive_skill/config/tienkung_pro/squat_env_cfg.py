@@ -125,3 +125,4 @@ class ProSquatFlatEnvCfg_PLAY(ProSquatFlatEnvCfg):
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_force_robot = None
+

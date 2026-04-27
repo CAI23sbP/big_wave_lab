@@ -50,7 +50,7 @@ class PickandPlaceSceneCfg(DownStreamSceneCfg):
 class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
     @configclass
     class PickandPlacePolicyCfg(DownstreamObservationsCfg.DownstreamPolicyCfg):
-        
+
         far_from_goal = ObsTerm(
             func=mdp.far_from_goal, 
             params={
@@ -82,6 +82,7 @@ class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
             
     @configclass
     class PickandPlaceCriticCfg(DownstreamObservationsCfg.DownstreamCriticCfg):
+
         end_table_pos = ObsTerm(
             func=mdp.end_table_pos, 
             params={
@@ -141,7 +142,6 @@ class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
 
 @configclass
 class PickandPlaceRewardsCfg(RewardsCfg):
-
     box_pos_diff = RewTerm(
         func=mdp.box_pos_diff, 
         weight=5., 
@@ -159,21 +159,40 @@ class PickandPlaceRewardsCfg(RewardsCfg):
             "asset_cfg": SceneEntityCfg("robot", body_names = ["wrist_roll_.*"]),
             },
     )
+    walk_squat_lower_weight_preference = RewTerm(
+        func=mdp.command_weight_preference_for_selected_skills_and_joint_names,
+        weight=1.0,
+        params={
+            "command_name": "downstream_command",
+            "action_term_name": "downstream_joint_pos",
+            "skill_names": ["walk", "squat"],
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                joint_names=[
+                    ".*hip.*",
+                    ".*knee.*",
+                    ".*ankle.*",
+                ],
+            ),
+            "alpha": 5.0,
+            "target_smoothing": 0.05,
+        },
+    )
     def __post_init__(self):
         super().__post_init__()
 
 @configclass 
 class PickandPlaceTerminationCfg(PrimitiveTerminationsCfg):
     
-    object_dropping = DoneTerm(
-        func=mdp.root_height_below_minimum, params={"minimum_height": 0.2, "asset_cfg": SceneEntityCfg("target_object")}
-    )
-    success = DoneTerm(func=mdp.task_done_pick_place, params={
-                        "object_cfg": SceneEntityCfg("target_object"),
-                        "end_table_cfg": SceneEntityCfg("table_2"),
-                        "threshold": 0.3, # time
-                        "distance": 0.2
-                        })
+    # object_dropping = DoneTerm(
+    #     func=mdp.root_height_below_minimum, params={"minimum_height": 0.2, "asset_cfg": SceneEntityCfg("target_object")}
+    # )
+    # success = DoneTerm(func=mdp.task_done_pick_place, params={
+    #                     "object_cfg": SceneEntityCfg("target_object"),
+    #                     "end_table_cfg": SceneEntityCfg("table_2"),
+    #                     "threshold": 0.3, # time
+    #                     "distance": 0.2
+    #                     })
     def __post_init__(self):
         super().__post_init__()
         self.base_contact.params["sensor_cfg"].body_names = [
@@ -181,8 +200,9 @@ class PickandPlaceTerminationCfg(PrimitiveTerminationsCfg):
             "body_yaw_.*", 
             "shoulder_.*",  
             "elbow_.*",
-            "knee_.*",
-            "hip_.*"
+            "head_.*"
+            # "knee_.*",
+            # "hip_.*"
         ]
         
 @configclass 
@@ -225,8 +245,8 @@ class PickandPlaceActionsCfg(ActionsCfg):
             "walk": (-2., 2.),
         }
         
-        self.downstream_joint_pos.upper_joint_names = ["head_.*","shoulder_.*", "elbow_.*", "wrist_.*"]
-        self.downstream_joint_pos.lower_joint_names = ["ankle_.*","hip_.*", "body_yaw_.*"]
+        self.downstream_joint_pos.upper_joint_names = ["body_yaw_.*", "head_.*","shoulder_.*", "elbow_.*", "wrist_.*"]
+        self.downstream_joint_pos.lower_joint_names = ["ankle_.*","hip_.*", "knee_.*"]
         self.downstream_joint_pos.upper_body_policy_paths = {
             "reach":"/home/cai/humanoid_ws/big_wave_lab/logs/rsl_rl/pro_reach/hanyang_erica/exported/policy.pt",
         }
@@ -277,11 +297,12 @@ class ProPickandPlaceEnvCfg(DonwStreamEnvCfg):
         super().__post_init__()
         self.scene.robot = PRO_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         
+        # self.scene.num_envs = 1
 
 @configclass
 class ProPickandPlaceEnvCfg_PLAY(ProPickandPlaceEnvCfg):
     viewer = ViewerCfg(
-            eye=(-0., 2.6, 1.6),
+            eye=(-0., 6.1, 1.6),
             asset_name = "robot",
             origin_type = 'asset_root',
         )

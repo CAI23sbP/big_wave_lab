@@ -14,6 +14,7 @@ class ModifiedPPO(PPO):
     policy: ActorCritic|ActorCriticVision
     def __init__(
         self,
+        env,
         policy,
         num_learning_epochs=5,
         num_mini_batches=4,
@@ -61,7 +62,7 @@ class ModifiedPPO(PPO):
         )
         del self.optimizer
         self.optimizer = optim.AdamW(filter(lambda p: p.requires_grad, self.policy.parameters()), lr=learning_rate)
-
+        
     def update(self):  # noqa: C901
         mean_value_loss = 0
         mean_surrogate_loss = 0
@@ -104,7 +105,6 @@ class ModifiedPPO(PPO):
             # original batch size
             # we assume policy group is always there and needs augmentation
             original_batch_size = obs_batch.batch_size[0]
-
             # check if we should normalize advantages per mini batch
             if self.normalize_advantage_per_mini_batch:
                 with torch.no_grad():
@@ -324,3 +324,4 @@ class ModifiedPPO(PPO):
             loss_dict["symmetry"] = mean_symmetry_loss
 
         return loss_dict
+

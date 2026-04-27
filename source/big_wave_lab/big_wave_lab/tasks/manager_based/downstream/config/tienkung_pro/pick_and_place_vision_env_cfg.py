@@ -71,13 +71,19 @@ class PickandPlaceObservationsCfg(PickandPlaceObservationsCfg):
         def __post_init__(self):
             super().__post_init__()
 
-    @configclass
-    class PickandPlaceVisionCfg(ObsGroup):
-        pass 
+    # @configclass
+    # class PickandPlaceVisionCfg(ObsGroup):
+    #     camera_image = ObsTerm(
+    #         func=mdp.camera_image, 
+    #         params={
+    #             "sensor_cfg": SceneEntityCfg("tiled_camera") ,
+    #             "data_type": "distance_to_camera"
+    #             },
+    #         ) 
                 
     policy: PickandPlaceVisionPolicyCfg = PickandPlaceVisionPolicyCfg()
     critic: PickandPlaceVisionCriticCfg = PickandPlaceVisionCriticCfg()
-    vision_obs: PickandPlaceVisionCfg = PickandPlaceVisionCfg()
+    # vision_obs: PickandPlaceVisionCfg = PickandPlaceVisionCfg()
     
 @configclass
 class ProPickandPlaceVisionEnvCfg(ProPickandPlaceEnvCfg):
@@ -91,7 +97,7 @@ class ProPickandPlaceVisionEnvCfg(ProPickandPlaceEnvCfg):
 @configclass
 class ProPickandPlaceVisionEnvCfg_PLAY(ProPickandPlaceVisionEnvCfg):
     viewer = ViewerCfg(
-            eye=(-0., 2.6, 1.6),
+            eye=(-0., 6.1, 1.6),
             asset_name = "robot",
             origin_type = 'asset_root',
         )

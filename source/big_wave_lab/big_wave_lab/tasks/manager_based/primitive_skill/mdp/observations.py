@@ -208,3 +208,20 @@ class rand_push_torque(ManagerTermBase):
 
 
 
+
+
+
+def modified_joint_pos_rel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    asset: Articulation = env.scene[asset_cfg.name]
+    data = torch.zeros_like(asset.data.joint_pos)
+    data[:,asset_cfg.joint_ids] = asset.data.joint_pos[:, asset_cfg.joint_ids] - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+    return data
+
+
+
+def modified_joint_vel_rel(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    asset: Articulation = env.scene[asset_cfg.name]
+    data = torch.zeros_like(asset.data.joint_pos)
+    data[:,asset_cfg.joint_ids] = asset.data.joint_vel[:, asset_cfg.joint_ids] - asset.data.default_joint_vel[:, asset_cfg.joint_ids]
+
+    return data

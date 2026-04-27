@@ -10,36 +10,32 @@ from isaaclab.managers import (
 from isaaclab.utils import configclass
 
 from .skill_blender_action import SkillBlenderAction
-from .part_wise_skill_blender_action import PartWiseSkillBlenderAction
+from .part_wise_skill_blender_action import PureSkillBlenderAction
 
 @configclass
-class PartWiseSkillBlenderCfg(ActionTermCfg):
-    class_type: type[ActionTerm] = PartWiseSkillBlenderAction
+class PureSkillBlenderCfg(ActionTermCfg):
+    class_type: type[ActionTerm] = PureSkillBlenderAction
     asset_name: str = MISSING
-    
-    head_joint_names: list[str]|None = None
-    head_policy_path: dict[str, str]|None = None
-    head_command_size: dict[str, int] = None
-    
-    upper_joint_names: list[str] = MISSING 
-    lower_joint_names: list[str] = MISSING 
-    scale: dict[str, tuple[float, float]] = MISSING
+
+    upper_joint_names: list[str] | None = None
+    lower_joint_names: list[str] | None = None
+    head_joint_names: list[str] | None = None
+
     upper_body_policy_paths: dict[str, str] = MISSING
     lower_body_policy_paths: dict[str, str] = MISSING
-    low_level_actions: ActionTermCfg = MISSING
-    
-    common_low_level_observations: ObservationGroupCfg = MISSING
-    low_level_command_observations: dict[str, ObservationGroupCfg] = MISSING
-    
-    low_level_command_term_names: dict[str, str] = MISSING
+    head_policy_path: dict[str, str] | None = None
 
     upper_body_command_size: dict[str, int] = MISSING
     lower_body_command_size: dict[str, int] = MISSING
-    
-    high_level_command_name: str = MISSING
-    
-    debug_vis: bool = False
+    head_command_size: dict[str, int] | None = None
+    scale: dict[str, tuple[float, float]] = MISSING
+
+    low_level_actions: ActionTermCfg = MISSING
+    common_low_level_observations: ObservationGroupCfg = MISSING
+    low_level_command_observations: dict[str, ObservationGroupCfg] = MISSING
+    low_level_command_term_names: dict[str, str] = MISSING
     low_level_decimation: int = 4
+    debug_vis: bool = False
 
 
 @configclass

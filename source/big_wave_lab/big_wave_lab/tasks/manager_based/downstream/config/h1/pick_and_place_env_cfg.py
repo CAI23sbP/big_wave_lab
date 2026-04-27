@@ -53,7 +53,12 @@ class PickandPlaceSceneCfg(DownStreamSceneCfg):
 class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
     @configclass
     class PickandPlacePolicyCfg(DownstreamObservationsCfg.DownstreamPolicyCfg):
-        
+        lower_skill_transition_state = ObsTerm(
+            func=mdp.lower_skill_transition_obs,
+            params={
+                "action_name": "part_wise_skill_blender",
+            },
+        )
         far_from_goal = ObsTerm(
             func=mdp.far_from_goal, 
             params={
@@ -86,6 +91,14 @@ class PickandPlaceObservationsCfg(DownstreamObservationsCfg):
             
     @configclass
     class PickandPlaceCriticCfg(DownstreamObservationsCfg.DownstreamCriticCfg):
+        lower_skill_transition_state = ObsTerm(
+            func=mdp.lower_skill_transition_obs,
+            params={
+                "action_name": "part_wise_skill_blender",
+            },
+            history_length = 3,
+        )
+
         end_table_pos = ObsTerm(
             func=mdp.end_table_pos, 
             params={

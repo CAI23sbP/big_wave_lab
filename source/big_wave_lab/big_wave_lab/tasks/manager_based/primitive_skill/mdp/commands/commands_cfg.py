@@ -139,7 +139,6 @@ class ArmTargetCommandCfg(PrimitiveSkillCommandCfg):
     target_arm_visualizer_cfg.markers["sphere"].scale = (0.5, 0.5, 0.5)
     current_arm_visualizer_cfg.markers["sphere"].scale = (0.5, 0.5, 0.5)
 
-
 @configclass
 class GaitCommandCfg(CommandTermCfg):
     """Configuration for the uniform velocity command generator."""

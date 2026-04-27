@@ -33,6 +33,7 @@ gym.register(
     },
 )
 
+
 ## Reach task
 gym.register(
     id="Isaac-Reach-Flat-Pro-v0",
@@ -79,8 +80,6 @@ gym.register(
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.walk_ppo_cfg:ProWalkRoughPPORunnerCfg",
     },
 )
-
-
 
 ## Head task
 gym.register(

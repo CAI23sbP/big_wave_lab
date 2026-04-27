@@ -19,6 +19,10 @@ class DelayJointPositionAction(JointPositionAction):
         # initialize the action term
         super().__init__(cfg, env)
         self._prev_raw_actions = torch.zeros_like(self.raw_actions)
+        
+    def apply_actions(self):
+        # set position targets
+        self._asset.set_joint_position_target(self.processed_actions, joint_ids=self._joint_ids)
 
     def process_actions(self, actions: torch.Tensor):
         # Apply delay in raw-action space so scaling/offset remain well-defined.
